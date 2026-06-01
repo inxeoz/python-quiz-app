@@ -128,7 +128,7 @@ fun QuestionDetailDialog(
 
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color.White.copy(alpha = 0.04f),
+                        color = Surface2,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(modifier = Modifier.padding(14.dp)) {
@@ -136,7 +136,7 @@ fun QuestionDetailDialog(
                                 .background(Accent).clip(RoundedCornerShape(2.dp)))
                             Spacer(Modifier.width(12.dp))
                             Column {
-                                Text("💡 Explanation:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Text)
+                                Text("Explanation", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Text)
                                 Spacer(Modifier.height(4.dp))
                                 Text(question.explanation, fontSize = 13.sp, color = TextMuted, lineHeight = 18.sp)
                             }

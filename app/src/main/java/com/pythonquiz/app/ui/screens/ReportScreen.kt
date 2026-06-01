@@ -177,7 +177,7 @@ fun ReportScreen(vm: QuizViewModel) {
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🎉 Perfect score! All answers correct.", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Correct)
+                    Text("Perfect score. All answers correct.", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Correct)
                 }
             } else {
                 wrongItems.forEach { (q, ua) ->
@@ -331,7 +331,7 @@ fun WrongAnswerCard(q: Question, userAnswer: String?) {
                             q.explanation, fontSize = 13.sp, color = TextMuted,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color.White.copy(alpha = 0.04f))
+                                .background(Surface2)
                                 .padding(12.dp)
                         )
                     }

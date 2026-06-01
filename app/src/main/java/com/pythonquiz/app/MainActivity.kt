@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
                         Screen.Quiz -> QuizScreen(vm = vm)
                         Screen.Report -> ReportScreen(vm = vm)
                         Screen.Browse -> BrowseScreen(vm = vm)
+                        Screen.FlaggedBrowse -> BrowseScreen(vm = vm, initialFlaggedOnly = true)
                     }
                 }
             }

@@ -33,7 +33,7 @@ import com.pythonquiz.app.viewmodel.QuizViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BrowseScreen(vm: QuizViewModel) {
+fun BrowseScreen(vm: QuizViewModel, initialFlaggedOnly: Boolean = false) {
     val allQuestions = vm.allQuestions
     val completedIds by vm.completedIds.collectAsState()
     val seenIds by vm.seenIds.collectAsState()
@@ -46,7 +46,7 @@ fun BrowseScreen(vm: QuizViewModel) {
     var showCompletedOnly by remember { mutableStateOf(false) }
     var showIncompleteOnly by remember { mutableStateOf(false) }
     var showVisitedOnly by remember { mutableStateOf(false) }
-    var showFlaggedOnly by remember { mutableStateOf(false) }
+    var showFlaggedOnly by remember(initialFlaggedOnly) { mutableStateOf(initialFlaggedOnly) }
 
     var detailQuestion by remember { mutableStateOf<Question?>(null) }
 

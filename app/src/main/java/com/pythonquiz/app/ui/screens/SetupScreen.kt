@@ -24,7 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Timer
@@ -37,6 +42,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -55,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pythonquiz.app.data.SavedQuizAttempt
 import com.pythonquiz.app.data.QuizLoader
 import com.pythonquiz.app.ui.theme.Accent
 import com.pythonquiz.app.ui.theme.AccentLight
@@ -74,6 +81,9 @@ import com.pythonquiz.app.ui.theme.TextMuted
 import com.pythonquiz.app.ui.theme.Warning
 import com.pythonquiz.app.viewmodel.PracticeScope
 import com.pythonquiz.app.viewmodel.QuizViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun SetupScreen(
@@ -87,6 +97,7 @@ fun SetupScreen(
     val seenIds by vm.seenIds.collectAsState()
     val flaggedIds by vm.flaggedIds.collectAsState()
     val dueReviewIds by vm.dueReviewIds.collectAsState()
+    val quizHistory by vm.quizHistory.collectAsState()
 
     var selectedLevels by remember { mutableStateOf(setOf(0, 1, 2, 4, 5)) }
     var questionCount by remember { mutableStateOf(25) }
@@ -135,7 +146,9 @@ fun SetupScreen(
                 completed = completedIds.size,
                 seen = seenIds.size,
                 completionPct = completionPct,
-                seenPct = seenPct
+                seenPct = seenPct,
+                flagged = flaggedIds.size,
+                reviewDue = dueReviewIds.size
             )
 
             if (state.hasSavedSession) {
@@ -159,6 +172,18 @@ fun SetupScreen(
                     }
                 }
             }
+
+            FlaggedHomeSection(
+                flaggedCount = flaggedIds.size,
+                onViewFlagged = { vm.goToFlaggedBrowse() },
+                onRetryFlagged = { vm.retryFlaggedQuestions() }
+            )
+
+            QuizHistorySection(
+                attempts = quizHistory,
+                onRetry = { vm.retryQuizAttempt(it) },
+                onClear = { vm.clearQuizHistory() }
+            )
 
             SectionCard(title = "Build a Session") {
                 Text("Difficulty", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -220,7 +245,7 @@ fun SetupScreen(
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Shuffle questions", color = Text, fontWeight = FontWeight.SemiBold)
-                        Text("Recommended for realistic practice", color = TextDim, fontSize = 12.sp)
+                        Text("Randomizes the question order for each session", color = TextDim, fontSize = 12.sp)
                     }
                     Switch(
                         checked = shuffle,
@@ -314,8 +339,16 @@ fun SetupScreen(
 }
 
 @Composable
-private fun HeaderBlock(total: Int, completed: Int, seen: Int, completionPct: Int, seenPct: Int) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+private fun HeaderBlock(
+    total: Int,
+    completed: Int,
+    seen: Int,
+    completionPct: Int,
+    seenPct: Int,
+    flagged: Int,
+    reviewDue: Int
+) {
+    SectionCard(title = "Dashboard") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -329,17 +362,166 @@ private fun HeaderBlock(total: Int, completed: Int, seen: Int, completionPct: In
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text("Python Quiz", style = MaterialTheme.typography.headlineLarge, color = Text)
-                Text("Practice, review, and track your Python question bank.", color = TextMuted)
+                Text("Offline exam practice with saved progress, history, and review queues.", color = TextMuted)
             }
+            OfflineBadge()
         }
+        Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             StatCard("Questions", "$total", Icons.Outlined.RadioButtonUnchecked, TextMuted, Modifier.weight(1f))
             StatCard("Completed", "$completed", Icons.Filled.CheckCircle, Correct, Modifier.weight(1f))
             StatCard("Seen", "$seen", Icons.Filled.Visibility, AccentLight, Modifier.weight(1f))
         }
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            MiniMetric("$flagged", "flagged", Warning, Modifier.weight(1f))
+            MiniMetric("$reviewDue", "review due", AccentLight, Modifier.weight(1f))
+            MiniMetric("Offline", "mode", Correct, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             ProgressCard("Mastery", completionPct, Correct, Modifier.weight(1f))
             ProgressCard("Coverage", seenPct, AccentLight, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun OfflineBadge() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Correct.copy(alpha = 0.14f))
+            .border(1.dp, Correct.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Lock, null, tint = Correct, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Offline", color = Correct, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun FlaggedHomeSection(
+    flaggedCount: Int,
+    onViewFlagged: () -> Unit,
+    onRetryFlagged: () -> Unit
+) {
+    SectionCard(title = "Flagged Questions") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Flag, null, tint = Warning, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("$flaggedCount flagged", color = Text, fontWeight = FontWeight.SemiBold)
+                Text("Review saved flags from any session.", color = TextDim, fontSize = 12.sp)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = onViewFlagged,
+                enabled = flaggedCount > 0,
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, Border),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Text)
+            ) {
+                Icon(Icons.Filled.Search, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Open")
+            }
+            Button(
+                onClick = onRetryFlagged,
+                enabled = flaggedCount > 0,
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Warning, disabledContainerColor = Surface2)
+            ) {
+                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Re-quiz", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuizHistorySection(
+    attempts: List<SavedQuizAttempt>,
+    onRetry: (SavedQuizAttempt) -> Unit,
+    onClear: () -> Unit
+) {
+    if (attempts.isEmpty()) return
+
+    val totalQuestions = attempts.sumOf { it.totalCount }
+    val totalCorrect = attempts.sumOf { it.correctCount }
+    val overallPct = if (totalQuestions > 0) totalCorrect * 100 / totalQuestions else 0
+    val bestPct = attempts.maxOfOrNull { if (it.totalCount > 0) it.correctCount * 100 / it.totalCount else 0 } ?: 0
+
+    SectionCard(title = "Quiz History") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.History, null, tint = AccentLight, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("${attempts.size} completed quizzes", color = Text, fontWeight = FontWeight.SemiBold)
+                Text("Overall $overallPct% · Best $bestPct%", color = TextDim, fontSize = 12.sp)
+            }
+            IconButton(onClick = onClear) {
+                Icon(Icons.Filled.DeleteSweep, "Clear history", tint = TextDim)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            MiniMetric("$overallPct%", "overall", Correct, Modifier.weight(1f))
+            MiniMetric("$bestPct%", "best", AccentLight, Modifier.weight(1f))
+            MiniMetric("$totalQuestions", "answered", Warning, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            attempts.forEach { attempt ->
+                AttemptRow(attempt = attempt, onRetry = { onRetry(attempt) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttemptRow(attempt: SavedQuizAttempt, onRetry: () -> Unit) {
+    val pct = if (attempt.totalCount > 0) attempt.correctCount * 100 / attempt.totalCount else 0
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Surface2)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("${attempt.correctCount}/${attempt.totalCount} · $pct%", color = Text, fontWeight = FontWeight.Bold)
+            Text(formatAttemptDate(attempt.completedAtMillis), color = TextDim, fontSize = 12.sp)
+        }
+        if (attempt.timedMode) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Correct.copy(alpha = 0.14f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text("${attempt.timeLimitMinutes}m", color = Correct, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.width(8.dp))
+        }
+        OutlinedButton(
+            onClick = onRetry,
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, Border),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Text)
+        ) {
+            Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Re-quiz")
         }
     }
 }
@@ -361,13 +543,16 @@ private fun SectionCard(title: String, content: @Composable ColumnScope.() -> Un
 
 @Composable
 private fun StatCard(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier = Modifier) {
-    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = Surface), border = BorderStroke(1.dp, Border), shape = RoundedCornerShape(8.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(value, color = Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text(label, color = TextMuted, fontSize = 12.sp)
-        }
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Surface2)
+            .padding(12.dp)
+    ) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.height(8.dp))
+        Text(value, color = Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = TextMuted, fontSize = 12.sp)
     }
 }
 
@@ -504,3 +689,7 @@ fun CountChip(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 private fun levelColor(level: Int): Color = Color(QuizLoader.levelColorValue(level))
+
+private fun formatAttemptDate(millis: Long): String {
+    return SimpleDateFormat("dd MMM, h:mm a", Locale.getDefault()).format(Date(millis))
+}

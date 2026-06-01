@@ -24,6 +24,7 @@ class ProgressStore(private val context: Context) {
     private val flaggedIdsKey = stringSetPreferencesKey("flagged_ids")
     private val dueReviewIdsKey = stringSetPreferencesKey("due_review_ids")
     private val activeSessionKey = stringPreferencesKey("active_session")
+    private val quizHistoryKey = stringPreferencesKey("quiz_history")
 
     val completedIds: Flow<Set<Int>> = context.dataStore.data.map { prefs ->
         (prefs[completedIdsKey] ?: emptySet()).mapNotNull { it.toIntOrNull() }.toSet()
@@ -39,6 +40,10 @@ class ProgressStore(private val context: Context) {
 
     val dueReviewIds: Flow<Set<Int>> = context.dataStore.data.map { prefs ->
         (prefs[dueReviewIdsKey] ?: emptySet()).mapNotNull { it.toIntOrNull() }.toSet()
+    }
+
+    val quizHistory: Flow<List<SavedQuizAttempt>> = context.dataStore.data.map { prefs ->
+        decodeQuizHistory(prefs[quizHistoryKey])
     }
 
     suspend fun toggleCompleted(id: Int) {
@@ -111,12 +116,30 @@ class ProgressStore(private val context: Context) {
         }
     }
 
+    suspend fun addQuizAttempt(attempt: SavedQuizAttempt) {
+        context.dataStore.edit { prefs ->
+            val current = decodeQuizHistory(prefs[quizHistoryKey])
+            prefs[quizHistoryKey] = json.encodeToString((listOf(attempt) + current).take(100))
+        }
+    }
+
+    suspend fun clearQuizHistory() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(quizHistoryKey)
+        }
+    }
+
     suspend fun getCompletedIds(): Set<Int> {
         return completedIds.first()
     }
 
     suspend fun getSeenIds(): Set<Int> {
         return seenIds.first()
+    }
+
+    private fun decodeQuizHistory(encoded: String?): List<SavedQuizAttempt> {
+        if (encoded == null) return emptyList()
+        return runCatching { json.decodeFromString<List<SavedQuizAttempt>>(encoded) }.getOrDefault(emptyList())
     }
 }
 
@@ -130,4 +153,16 @@ data class SavedQuizSession(
     val timedMode: Boolean = false,
     val timeLimitMinutes: Int = 0,
     val remainingSeconds: Int = 0
+)
+
+@Serializable
+data class SavedQuizAttempt(
+    val id: Long,
+    val completedAtMillis: Long,
+    val questionIds: List<Int> = emptyList(),
+    val answers: Map<Int, String> = emptyMap(),
+    val correctCount: Int = 0,
+    val totalCount: Int = 0,
+    val timedMode: Boolean = false,
+    val timeLimitMinutes: Int = 0
 )

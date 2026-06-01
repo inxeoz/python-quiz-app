@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.pythonquiz.app.data.ProgressStore
 import com.pythonquiz.app.data.Question
 import com.pythonquiz.app.data.QuizLoader
+import com.pythonquiz.app.data.SavedQuizAttempt
 import com.pythonquiz.app.data.SavedQuizSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,7 +35,7 @@ data class QuizUiState(
     val hasSavedSession: Boolean = false
 )
 
-enum class Screen { Setup, Quiz, Report, Browse }
+enum class Screen { Setup, Quiz, Report, Browse, FlaggedBrowse }
 enum class PracticeScope { All, NewOnly, Incomplete, Completed, Flagged, ReviewDue }
 
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
@@ -53,6 +54,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
     val dueReviewIds: StateFlow<Set<Int>> = progressStore.dueReviewIds
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
+    val quizHistory: StateFlow<List<SavedQuizAttempt>> = progressStore.quizHistory
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     var allQuestions: List<Question> = emptyList()
         private set
@@ -176,6 +179,18 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             val wrongIds = session.questions.filter { q -> session.answers[q.id] != q.answer }.map { it.id }.toSet()
             val correctIds = session.questions.filter { q -> session.answers[q.id] == q.answer }.map { it.id }.toSet()
             progressStore.recordReviewResults(wrongIds, correctIds)
+            progressStore.addQuizAttempt(
+                SavedQuizAttempt(
+                    id = System.currentTimeMillis(),
+                    completedAtMillis = System.currentTimeMillis(),
+                    questionIds = session.questions.map { it.id },
+                    answers = session.answers,
+                    correctCount = correctIds.size,
+                    totalCount = session.questions.size,
+                    timedMode = session.timedMode,
+                    timeLimitMinutes = session.timeLimitMinutes
+                )
+            )
             progressStore.clearActiveSession()
         }
     }
@@ -193,6 +208,10 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     fun goToBrowse() {
         _state.value = _state.value.copy(currentScreen = Screen.Browse)
+    }
+
+    fun goToFlaggedBrowse() {
+        _state.value = _state.value.copy(currentScreen = Screen.FlaggedBrowse)
     }
 
     fun addSearchQuery(query: String) {
@@ -243,6 +262,16 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun retryQuizAttempt(attempt: SavedQuizAttempt) {
+        val questions = questionsByIds(attempt.questionIds)
+        startQuizFromQuestions(questions, shuffle = false, shuffleOptions = true)
+    }
+
+    fun retryFlaggedQuestions() {
+        val questions = questionsByIds(flaggedIds.value.toList())
+        startQuizFromQuestions(questions, shuffle = false, shuffleOptions = true)
+    }
+
     fun shareQuestionText(question: Question): String {
         return buildString {
             appendLine(question.question)
@@ -263,6 +292,12 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         return "Python Quiz score: $correct/$total ($pct%)."
     }
 
+    fun clearQuizHistory() {
+        viewModelScope.launch {
+            progressStore.clearQuizHistory()
+        }
+    }
+
     private fun updateSession(session: QuizSession) {
         _state.value = _state.value.copy(session = session)
         persistSession(session)
@@ -273,6 +308,11 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             progressStore.saveActiveSession(session.toSaved())
         }
+    }
+
+    private fun questionsByIds(ids: List<Int>): List<Question> {
+        val byId = allQuestions.associateBy { it.id }
+        return ids.mapNotNull { byId[it] }
     }
 
     private fun QuizSession.toSaved(): SavedQuizSession = SavedQuizSession(

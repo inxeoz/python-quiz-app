@@ -1,14 +1,14 @@
 package com.pythonquiz.app.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-private val DarkColorScheme = darkColorScheme(
+private val AppColorScheme = lightColorScheme(
     primary = Accent,
     secondary = AccentLight,
     background = DarkBg,
@@ -26,7 +26,7 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun PythonQuizTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = AppColorScheme,
         typography = MaterialTheme.typography.copy(
             headlineLarge = TextStyle(fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.ExtraBold),
             headlineMedium = TextStyle(fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold),

@@ -229,7 +229,7 @@ private fun BottomNav(
             } else if (!session.submitted) {
                 Button(
                     onClick = onSubmit,
-                    colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = DarkBg),
+                    colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Text),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, null, modifier = Modifier.size(18.dp))
@@ -366,7 +366,7 @@ fun QuestionCard(
             Spacer(Modifier.height(16.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color.White.copy(alpha = 0.04f),
+                color = Surface2,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Row(modifier = Modifier.padding(16.dp)) {
@@ -379,7 +379,7 @@ fun QuestionCard(
                     )
                     Spacer(Modifier.width(14.dp))
                     Column {
-                        Text("💡 Explanation:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Text)
+                        Text("Explanation", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Text)
                         Spacer(Modifier.height(6.dp))
                         Text(text = question.explanation, fontSize = 14.sp, color = TextMuted, lineHeight = 20.sp)
                     }
@@ -414,7 +414,7 @@ fun OverviewPanel(session: QuizSession, flaggedIds: Set<Int>, onJumpTo: (Int) ->
                     flaggedIndexes.forEach { idx ->
                         Button(
                             onClick = { onJumpTo(idx) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = DarkBg),
+                            colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Text),
                             shape = RoundedCornerShape(8.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                         ) {
