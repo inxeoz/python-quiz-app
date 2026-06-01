@@ -40,8 +40,8 @@ class MainActivity : ComponentActivity() {
                     when (state.currentScreen) {
                         Screen.Setup -> SetupScreen(
                             vm = vm,
-                            onStart = { levels, count, shuffle, scope ->
-                                vm.startQuiz(levels, count, shuffle, scope)
+                            onStart = { levels, count, shuffle, scope, shuffleOptions, timedMode, minutes ->
+                                vm.startQuiz(levels, count, shuffle, scope, shuffleOptions, timedMode, minutes)
                             },
                             onBrowse = { vm.goToBrowse() }
                         )

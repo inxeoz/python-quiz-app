@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Button
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pythonquiz.app.data.QuizLoader
 import com.pythonquiz.app.ui.theme.Accent
 import com.pythonquiz.app.ui.theme.AccentLight
 import com.pythonquiz.app.ui.theme.Border
@@ -76,27 +78,35 @@ import com.pythonquiz.app.viewmodel.QuizViewModel
 @Composable
 fun SetupScreen(
     vm: QuizViewModel,
-    onStart: (Set<Int>, Int, Boolean, PracticeScope) -> Unit,
+    onStart: (Set<Int>, Int, Boolean, PracticeScope, Boolean, Boolean, Int) -> Unit,
     onBrowse: () -> Unit
 ) {
+    val state by vm.state.collectAsState()
     val allQuestions = vm.allQuestions
     val completedIds by vm.completedIds.collectAsState()
     val seenIds by vm.seenIds.collectAsState()
+    val flaggedIds by vm.flaggedIds.collectAsState()
+    val dueReviewIds by vm.dueReviewIds.collectAsState()
 
     var selectedLevels by remember { mutableStateOf(setOf(0, 1, 2, 4, 5)) }
     var questionCount by remember { mutableStateOf(25) }
     var useAllCount by remember { mutableStateOf(false) }
     var shuffle by remember { mutableStateOf(true) }
+    var shuffleOptions by remember { mutableStateOf(true) }
+    var timedMode by remember { mutableStateOf(false) }
+    var timeLimitMinutes by remember { mutableStateOf(20) }
     var scope by remember { mutableStateOf(PracticeScope.All) }
 
-    val levelOptions = listOf(0 to "Basic", 1 to "Beginner", 2 to "Intermediate", 4 to "Advanced", 5 to "Expert")
-    val scopedQuestions = remember(allQuestions, completedIds, seenIds, selectedLevels, scope) {
+    val levelOptions = QuizLoader.levelNames.toSortedMap().toList()
+    val scopedQuestions = remember(allQuestions, completedIds, seenIds, flaggedIds, dueReviewIds, selectedLevels, scope) {
         allQuestions.filter {
             it.level in selectedLevels && when (scope) {
                 PracticeScope.All -> true
                 PracticeScope.NewOnly -> it.id !in seenIds
                 PracticeScope.Incomplete -> it.id !in completedIds
                 PracticeScope.Completed -> it.id in completedIds
+                PracticeScope.Flagged -> it.id in flaggedIds
+                PracticeScope.ReviewDue -> it.id in dueReviewIds
             }
         }
     }
@@ -128,6 +138,28 @@ fun SetupScreen(
                 seenPct = seenPct
             )
 
+            if (state.hasSavedSession) {
+                SectionCard(title = "Continue") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Resume unfinished session", color = Text, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "${state.session.answers.size}/${state.session.questions.size} answered",
+                                color = TextDim,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Button(
+                            onClick = { vm.resumeSavedSession() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Resume", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
             SectionCard(title = "Build a Session") {
                 Text("Difficulty", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
@@ -154,6 +186,8 @@ fun SetupScreen(
                     ScopeChip("New", PracticeScope.NewOnly, scope) { scope = it }
                     ScopeChip("Incomplete", PracticeScope.Incomplete, scope) { scope = it }
                     ScopeChip("Completed", PracticeScope.Completed, scope) { scope = it }
+                    ScopeChip("Flagged (${flaggedIds.size})", PracticeScope.Flagged, scope) { scope = it }
+                    ScopeChip("Review (${dueReviewIds.size})", PracticeScope.ReviewDue, scope) { scope = it }
                 }
 
                 Spacer(Modifier.height(18.dp))
@@ -194,6 +228,36 @@ fun SetupScreen(
                         colors = SwitchDefaults.colors(checkedThumbColor = Text, checkedTrackColor = Accent)
                     )
                 }
+
+                Spacer(Modifier.height(10.dp))
+                OptionRow(
+                    icon = { Icon(Icons.Filled.Shuffle, null, tint = Warning, modifier = Modifier.size(20.dp)) },
+                    title = "Shuffle answer options",
+                    subtitle = "Option order is saved for this session",
+                    checked = shuffleOptions,
+                    onCheckedChange = { shuffleOptions = it }
+                )
+
+                Spacer(Modifier.height(10.dp))
+                OptionRow(
+                    icon = { Icon(Icons.Filled.Timer, null, tint = Correct, modifier = Modifier.size(20.dp)) },
+                    title = "Timed mode",
+                    subtitle = "$timeLimitMinutes minutes",
+                    checked = timedMode,
+                    onCheckedChange = { timedMode = it }
+                )
+                if (timedMode) {
+                    Spacer(Modifier.height(8.dp))
+                    ScrollRow {
+                        listOf(10, 20, 30, 45, 60).forEach { minutes ->
+                            CountChip(
+                                text = "${minutes}m",
+                                selected = timeLimitMinutes == minutes,
+                                onClick = { timeLimitMinutes = minutes }
+                            )
+                        }
+                    }
+                }
             }
 
             SectionCard(title = "Ready") {
@@ -207,7 +271,17 @@ fun SetupScreen(
                 }
                 Spacer(Modifier.height(14.dp))
                 Button(
-                    onClick = { onStart(selectedLevels, if (useAllCount) poolSize else questionCount, shuffle, scope) },
+                    onClick = {
+                        onStart(
+                            selectedLevels,
+                            if (useAllCount) poolSize else questionCount,
+                            shuffle,
+                            scope,
+                            shuffleOptions,
+                            timedMode,
+                            timeLimitMinutes
+                        )
+                    },
                     enabled = poolSize > 0,
                     colors = ButtonDefaults.buttonColors(containerColor = Accent, disabledContainerColor = Surface2),
                     modifier = Modifier
@@ -337,6 +411,36 @@ private fun MiniMetric(value: String, label: String, color: Color, modifier: Mod
 }
 
 @Composable
+private fun OptionRow(
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Surface2)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icon()
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = Text, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = TextDim, fontSize = 12.sp)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(checkedThumbColor = Text, checkedTrackColor = Accent)
+        )
+    }
+}
+
+@Composable
 fun ScrollRow(content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier
@@ -399,10 +503,4 @@ fun CountChip(text: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-private fun levelColor(level: Int): Color = when (level) {
-    0 -> Level0
-    1 -> Level1
-    2 -> Level2
-    4 -> Level4
-    else -> Level5
-}
+private fun levelColor(level: Int): Color = Color(QuizLoader.levelColorValue(level))

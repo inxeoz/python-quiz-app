@@ -28,4 +28,18 @@ object QuizLoader {
         4 to 0xFFF59E0B.toInt(),
         5 to 0xFFEF4444.toInt()
     )
+
+    fun levelName(level: Int): String = levelNames[level] ?: "Level $level"
+
+    fun levelColorValue(level: Int): Int = levelColors[level] ?: levelColors.getValue(0)
+
+    fun optionLabel(index: Int): String {
+        var value = index
+        val builder = StringBuilder()
+        do {
+            builder.insert(0, ('A'.code + (value % 26)).toChar())
+            value = value / 26 - 1
+        } while (value >= 0)
+        return builder.toString()
+    }
 }

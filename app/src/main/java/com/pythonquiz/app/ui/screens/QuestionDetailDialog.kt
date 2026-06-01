@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.pythonquiz.app.data.Question
+import com.pythonquiz.app.data.QuizLoader
 import com.pythonquiz.app.ui.theme.*
 
 @Composable
@@ -31,9 +32,7 @@ fun QuestionDetailDialog(
     onDismiss: () -> Unit,
     onToggleCompleted: () -> Unit
 ) {
-    val levelColor = when (question.level) { 0 -> Level0; 1 -> Level1; 2 -> Level2; 4 -> Level4; else -> Level5 }
-    val levelNames = mapOf(0 to "Basic", 1 to "Beginner", 2 to "Intermediate", 4 to "Advanced", 5 to "Expert")
-    val letters = listOf("A", "B", "C", "D", "E")
+    val levelColor = Color(QuizLoader.levelColorValue(question.level))
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -61,7 +60,7 @@ fun QuestionDetailDialog(
                                     .background(levelColor.copy(alpha = 0.15f))
                                     .padding(horizontal = 10.dp, vertical = 3.dp)
                             ) {
-                                Text("Level ${question.level} · ${levelNames[question.level]}",
+                                Text("Level ${question.level} · ${QuizLoader.levelName(question.level)}",
                                     fontSize = 11.sp, fontWeight = FontWeight.Bold, color = levelColor)
                             }
                             Spacer(Modifier.width(8.dp))
@@ -113,7 +112,7 @@ fun QuestionDetailDialog(
                                     .background(if (isCorrectOption) Correct else Border),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(letters.getOrElse(i) { "$i" }, fontSize = 12.sp,
+                                Text(QuizLoader.optionLabel(i), fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isCorrectOption) Color.White else TextMuted)
                             }

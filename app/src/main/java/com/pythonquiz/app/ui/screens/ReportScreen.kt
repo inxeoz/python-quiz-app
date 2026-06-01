@@ -1,5 +1,6 @@
 package com.pythonquiz.app.ui.screens
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,17 +9,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pythonquiz.app.data.Question
+import com.pythonquiz.app.data.QuizLoader
 import com.pythonquiz.app.ui.theme.*
 import com.pythonquiz.app.viewmodel.QuizViewModel
 
@@ -28,9 +31,10 @@ fun ReportScreen(vm: QuizViewModel) {
     val session = state.session
     val questions = session.questions
     val answers = session.answers
+    val context = LocalContext.current
 
     val total = questions.size
-    val correct = questions.mapIndexed { i, q -> answers[i] == q.answer }.count { it }
+    val correct = questions.count { q -> answers[q.id] == q.answer }
     val wrong = total - correct
     val pct = if (total > 0) (correct * 100 / total) else 0
     val grade = when {
@@ -69,6 +73,17 @@ fun ReportScreen(vm: QuizViewModel) {
                     Text("Quiz Report", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Text)
                     Text("$total questions · Completed now", fontSize = 14.sp, color = TextMuted)
                 }
+                IconButton(
+                    onClick = {
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, vm.shareScoreSummary())
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, "Share score"))
+                    }
+                ) {
+                    Icon(Icons.Filled.Share, "Share score", tint = TextMuted)
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -89,26 +104,24 @@ fun ReportScreen(vm: QuizViewModel) {
             Spacer(Modifier.height(28.dp))
 
             val levelMap = mutableMapOf<Int, Pair<Int, Int>>()
-            questions.forEachIndexed { i, q ->
+            questions.forEach { q ->
                 val cur = levelMap.getOrDefault(q.level, 0 to 0)
-                levelMap[q.level] = (cur.first + (if (answers[i] == q.answer) 1 else 0)) to (cur.second + 1)
+                levelMap[q.level] = (cur.first + (if (answers[q.id] == q.answer) 1 else 0)) to (cur.second + 1)
             }
-            val levelNames = mapOf(0 to "Basic", 1 to "Beginner", 2 to "Intermediate", 4 to "Advanced", 5 to "Expert")
-            val lvColors = mapOf(0 to Level0, 1 to Level1, 2 to Level2, 4 to Level4, 5 to Level5)
 
             SectionTitle("By Level")
             levelMap.toSortedMap().forEach { (lv, stats) ->
                 val (c, t) = stats
                 val p = if (t > 0) (c * 100 / t) else 0
-                LevelRow(level = lv, name = levelNames[lv] ?: "", correct = c, total = t, pct = p, color = lvColors[lv] ?: Level0)
+                LevelRow(level = lv, name = QuizLoader.levelName(lv), correct = c, total = t, pct = p, color = Color(QuizLoader.levelColorValue(lv)))
             }
 
             Spacer(Modifier.height(20.dp))
 
             val topicMap = mutableMapOf<String, Pair<Int, Int>>()
-            questions.forEachIndexed { i, q ->
+            questions.forEach { q ->
                 val cur = topicMap.getOrDefault(q.topic, 0 to 0)
-                topicMap[q.topic] = (cur.first + (if (answers[i] == q.answer) 1 else 0)) to (cur.second + 1)
+                topicMap[q.topic] = (cur.first + (if (answers[q.id] == q.answer) 1 else 0)) to (cur.second + 1)
             }
 
             SectionTitle("By Topic")
@@ -122,9 +135,9 @@ fun ReportScreen(vm: QuizViewModel) {
 
             Spacer(Modifier.height(20.dp))
 
-            val wrongItems = questions.mapIndexedNotNull { i, q ->
-                val ua = answers[i]
-                if (ua != q.answer) Triple(q, i, ua) else null
+            val wrongItems = questions.mapNotNull { q ->
+                val ua = answers[q.id]
+                if (ua != q.answer) q to ua else null
             }
 
             Row(
@@ -167,7 +180,7 @@ fun ReportScreen(vm: QuizViewModel) {
                     Text("🎉 Perfect score! All answers correct.", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Correct)
                 }
             } else {
-                wrongItems.forEach { (q, i, ua) ->
+                wrongItems.forEach { (q, ua) ->
                     WrongAnswerCard(q = q, userAnswer = ua)
                 }
             }

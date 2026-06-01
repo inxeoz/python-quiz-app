@@ -1,9 +1,11 @@
 package com.pythonquiz.app.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,16 +19,19 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.OutlinedFlag
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pythonquiz.app.data.Question
+import com.pythonquiz.app.data.QuizLoader
 import com.pythonquiz.app.ui.theme.*
 import com.pythonquiz.app.viewmodel.QuizSession
 import com.pythonquiz.app.viewmodel.QuizViewModel
@@ -34,8 +39,10 @@ import com.pythonquiz.app.viewmodel.QuizViewModel
 @Composable
 fun QuizScreen(vm: QuizViewModel) {
     val state by vm.state.collectAsState()
+    val flaggedIds by vm.flaggedIds.collectAsState()
     val session = state.session
     val q = session.questions.getOrNull(session.currentIndex) ?: return
+    val context = LocalContext.current
 
     var showOverview by remember { mutableStateOf(false) }
 
@@ -56,6 +63,13 @@ fun QuizScreen(vm: QuizViewModel) {
         }
     }
 
+    LaunchedEffect(session.timedMode, session.remainingSeconds, session.submitted) {
+        if (session.timedMode && !session.submitted && session.remainingSeconds > 0) {
+            kotlinx.coroutines.delay(1000)
+            vm.tickTimer()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,7 +78,10 @@ fun QuizScreen(vm: QuizViewModel) {
         Header(
             session = session,
             onBack = { vm.goToSetup() },
-            onOverview = { showOverview = !showOverview }
+            onOverview = { showOverview = !showOverview },
+            onShare = {
+                shareText(context, "Share question", vm.shareQuestionText(q))
+            }
         )
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             Column(
@@ -77,11 +94,12 @@ fun QuizScreen(vm: QuizViewModel) {
                     question = q,
                     index = session.currentIndex,
                     total = session.questions.size,
-                    userAnswer = session.answers[session.currentIndex],
-                    isFlagged = session.currentIndex in session.flagged,
+                    options = session.optionOrders[q.id] ?: q.options,
+                    userAnswer = session.answers[q.id],
+                    isFlagged = q.id in flaggedIds,
                     submitted = session.submitted,
-                    onSelectAnswer = { vm.selectAnswer(session.currentIndex, it) },
-                    onToggleFlag = { vm.toggleFlag(session.currentIndex) }
+                    onSelectAnswer = { vm.selectAnswer(q.id, it) },
+                    onToggleFlag = { vm.toggleFlag(q.id) }
                 )
             }
         }
@@ -102,6 +120,7 @@ fun QuizScreen(vm: QuizViewModel) {
         ) {
             OverviewPanel(
                 session = session,
+                flaggedIds = flaggedIds,
                 onJumpTo = { idx ->
                     vm.jumpToQuestion(idx)
                     showOverview = false
@@ -112,7 +131,7 @@ fun QuizScreen(vm: QuizViewModel) {
 }
 
 @Composable
-private fun Header(session: QuizSession, onBack: () -> Unit, onOverview: () -> Unit) {
+private fun Header(session: QuizSession, onBack: () -> Unit, onOverview: () -> Unit, onShare: () -> Unit) {
     Column(
         modifier = Modifier
             .background(Surface)
@@ -130,8 +149,22 @@ private fun Header(session: QuizSession, onBack: () -> Unit, onOverview: () -> U
             IconButton(onClick = onOverview) {
                 Icon(Icons.Filled.Dashboard, "Overview", tint = AccentLight)
             }
+            IconButton(onClick = onShare) {
+                Icon(Icons.Filled.Share, "Share question", tint = TextMuted)
+            }
             Spacer(Modifier.width(8.dp))
             Text("${session.answers.size}/${session.questions.size}", fontSize = 13.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
+        }
+        if (session.timedMode) {
+            val minutes = session.remainingSeconds / 60
+            val seconds = session.remainingSeconds % 60
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Time left: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}",
+                fontSize = 12.sp,
+                color = if (session.remainingSeconds <= 60) Wrong else TextMuted,
+                fontWeight = FontWeight.Bold
+            )
         }
         Spacer(Modifier.height(4.dp))
         val pct = if (session.questions.isNotEmpty()) (session.answers.size.toFloat() / session.questions.size) * 100 else 0f
@@ -213,6 +246,7 @@ fun QuestionCard(
     question: Question,
     index: Int,
     total: Int,
+    options: List<String>,
     userAnswer: String?,
     isFlagged: Boolean,
     submitted: Boolean,
@@ -220,8 +254,7 @@ fun QuestionCard(
     onToggleFlag: () -> Unit
 ) {
     val answered = submitted || userAnswer != null
-    val levelNames = mapOf(0 to "Basic", 1 to "Beginner", 2 to "Intermediate", 4 to "Advanced", 5 to "Expert")
-    val levelColor = when (question.level) { 0 -> Level0; 1 -> Level1; 2 -> Level2; 4 -> Level4; else -> Level5 }
+    val levelColor = Color(QuizLoader.levelColorValue(question.level))
 
     Column {
         Card(
@@ -239,7 +272,7 @@ fun QuestionCard(
                     .background(levelColor.copy(alpha = 0.15f))
                     .padding(horizontal = 10.dp, vertical = 3.dp)
             ) {
-                Text("Level ${question.level} · ${levelNames[question.level]}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = levelColor)
+                Text("Level ${question.level} · ${QuizLoader.levelName(question.level)}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = levelColor)
             }
             Spacer(Modifier.width(8.dp))
             Box(
@@ -264,8 +297,7 @@ fun QuestionCard(
         Text(text = question.question, fontSize = 17.sp, fontWeight = FontWeight.Medium, color = Text, lineHeight = 26.sp)
         Spacer(Modifier.height(20.dp))
 
-        val letters = listOf("A", "B", "C", "D", "E")
-        question.options.forEachIndexed { i, opt ->
+        options.forEachIndexed { i, opt ->
             val isSelected = userAnswer == opt
             val isCorrectOption = opt == question.answer
             val isPickedWrong = isSelected && !isCorrectOption
@@ -315,7 +347,7 @@ fun QuestionCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        letters.getOrElse(i) { "$i" },
+                        QuizLoader.optionLabel(i),
                         fontSize = 13.sp, fontWeight = FontWeight.Bold,
                         color = if (showFeedback && (isCorrectOption || isPickedWrong) || (isSelected && !showFeedback)) Color.White else TextMuted
                     )
@@ -362,7 +394,7 @@ fun QuestionCard(
 }
 
 @Composable
-fun OverviewPanel(session: QuizSession, onJumpTo: (Int) -> Unit) {
+fun OverviewPanel(session: QuizSession, flaggedIds: Set<Int>, onJumpTo: (Int) -> Unit) {
     Surface(
         modifier = Modifier
             .width(280.dp)
@@ -372,6 +404,26 @@ fun OverviewPanel(session: QuizSession, onJumpTo: (Int) -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Questions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextMuted, modifier = Modifier.padding(bottom = 16.dp))
+            val flaggedIndexes = session.questions.mapIndexedNotNull { index, question ->
+                if (question.id in flaggedIds) index else null
+            }
+            if (flaggedIndexes.isNotEmpty()) {
+                Text("Flagged", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Yellow)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    flaggedIndexes.forEach { idx ->
+                        Button(
+                            onClick = { onJumpTo(idx) },
+                            colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = DarkBg),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("Q${idx + 1}", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
             val columns = 5
             val rows = (session.questions.size + columns - 1) / columns
             for (row in 0 until rows) {
@@ -379,9 +431,10 @@ fun OverviewPanel(session: QuizSession, onJumpTo: (Int) -> Unit) {
                     for (col in 0 until columns) {
                         val idx = row * columns + col
                         if (idx < session.questions.size) {
-                            val isAnswered = session.answers.containsKey(idx)
+                            val isAnswered = session.answers.containsKey(session.questions[idx].id)
+                            val isFlagged = session.questions[idx].id in flaggedIds
                             val dotColor = when {
-                                idx in session.flagged -> Yellow
+                                isFlagged -> Yellow
                                 isAnswered -> Accent
                                 else -> Surface2
                             }
@@ -390,7 +443,7 @@ fun OverviewPanel(session: QuizSession, onJumpTo: (Int) -> Unit) {
                                 modifier = Modifier
                                     .size(44.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(dotColor.copy(alpha = if (isAnswered || idx in session.flagged) 1f else 0.5f))
+                                    .background(dotColor.copy(alpha = if (isAnswered || isFlagged) 1f else 0.5f))
                                     .then(
                                         if (isCurrent) Modifier.border(2.dp, Yellow, RoundedCornerShape(8.dp))
                                         else Modifier
@@ -399,7 +452,7 @@ fun OverviewPanel(session: QuizSession, onJumpTo: (Int) -> Unit) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text("${idx + 1}", fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                    color = if (isAnswered || idx in session.flagged) Color.White else TextMuted)
+                                    color = if (isAnswered || isFlagged) Color.White else TextMuted)
                             }
                         }
                     }
@@ -407,4 +460,12 @@ fun OverviewPanel(session: QuizSession, onJumpTo: (Int) -> Unit) {
             }
         }
     }
+}
+
+private fun shareText(context: android.content.Context, title: String, text: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(sendIntent, title))
 }

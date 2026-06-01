@@ -10,6 +10,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.OutlinedFlag
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -20,10 +22,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pythonquiz.app.data.Question
+import com.pythonquiz.app.data.QuizLoader
 import com.pythonquiz.app.ui.theme.*
 import com.pythonquiz.app.viewmodel.QuizViewModel
 
@@ -34,6 +38,7 @@ fun BrowseScreen(vm: QuizViewModel) {
     val completedIds by vm.completedIds.collectAsState()
     val seenIds by vm.seenIds.collectAsState()
     val searchHistory by vm.searchHistory.collectAsState()
+    val flaggedIds by vm.flaggedIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedLevel by remember { mutableStateOf<Int?>(null) }
@@ -41,10 +46,11 @@ fun BrowseScreen(vm: QuizViewModel) {
     var showCompletedOnly by remember { mutableStateOf(false) }
     var showIncompleteOnly by remember { mutableStateOf(false) }
     var showVisitedOnly by remember { mutableStateOf(false) }
+    var showFlaggedOnly by remember { mutableStateOf(false) }
 
     var detailQuestion by remember { mutableStateOf<Question?>(null) }
 
-    val filtered = remember(allQuestions, searchQuery, selectedLevel, selectedTopic, showCompletedOnly, showIncompleteOnly, showVisitedOnly, completedIds, seenIds) {
+    val filtered = remember(allQuestions, searchQuery, selectedLevel, selectedTopic, showCompletedOnly, showIncompleteOnly, showVisitedOnly, showFlaggedOnly, completedIds, seenIds, flaggedIds) {
         allQuestions.filter { q ->
             val matchesSearch = searchQuery.isBlank() ||
                     q.question.contains(searchQuery, ignoreCase = true) ||
@@ -58,7 +64,8 @@ fun BrowseScreen(vm: QuizViewModel) {
                 else -> true
             }
             val matchesVisited = if (showVisitedOnly) q.id in seenIds else true
-            matchesSearch && matchesLevel && matchesTopic && matchesCompletion && matchesVisited
+            val matchesFlagged = if (showFlaggedOnly) q.id in flaggedIds else true
+            matchesSearch && matchesLevel && matchesTopic && matchesCompletion && matchesVisited && matchesFlagged
         }
     }
 
@@ -81,7 +88,7 @@ fun BrowseScreen(vm: QuizViewModel) {
                     }
                     Spacer(Modifier.weight(1f))
                     Text(
-                        "${allQuestions.size} questions · ${completedIds.size} completed",
+                        "${allQuestions.size} questions · ${completedIds.size} completed · ${flaggedIds.size} flagged",
                         fontSize = 13.sp, color = TextMuted
                     )
                 }
@@ -174,7 +181,7 @@ fun BrowseScreen(vm: QuizViewModel) {
                 Spacer(Modifier.width(6.dp))
                 FilterChip(
                     selected = showVisitedOnly,
-                    onClick = { showVisitedOnly = !showVisitedOnly; showCompletedOnly = false; showIncompleteOnly = false },
+                    onClick = { showVisitedOnly = !showVisitedOnly; showCompletedOnly = false; showIncompleteOnly = false; showFlaggedOnly = false },
                     label = { Text("Seen (${seenIds.size})", fontSize = 12.sp) },
                     leadingIcon = {
                         Icon(
@@ -186,6 +193,23 @@ fun BrowseScreen(vm: QuizViewModel) {
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Level4.copy(alpha = 0.15f),
                         selectedLabelColor = Level4
+                    )
+                )
+                Spacer(Modifier.width(6.dp))
+                FilterChip(
+                    selected = showFlaggedOnly,
+                    onClick = { showFlaggedOnly = !showFlaggedOnly; showCompletedOnly = false; showIncompleteOnly = false; showVisitedOnly = false },
+                    label = { Text("Flagged (${flaggedIds.size})", fontSize = 12.sp) },
+                    leadingIcon = {
+                        Icon(
+                            if (showFlaggedOnly) Icons.Filled.Flag else Icons.Filled.OutlinedFlag,
+                            null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Warning.copy(alpha = 0.15f),
+                        selectedLabelColor = Warning
                     )
                 )
                 if (selectedTopic != null) {
@@ -231,7 +255,9 @@ fun BrowseScreen(vm: QuizViewModel) {
                     BrowseQuestionCard(
                         question = q,
                         isCompleted = q.id in completedIds,
+                        isFlagged = q.id in flaggedIds,
                         onToggleCompleted = { vm.toggleCompleted(q.id) },
+                        onToggleFlagged = { vm.toggleFlag(q.id) },
                         onTap = {
                             vm.markAsSeen(q.id)
                             detailQuestion = q
@@ -280,11 +306,13 @@ fun LevelFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
 fun BrowseQuestionCard(
     question: Question,
     isCompleted: Boolean,
+    isFlagged: Boolean,
     onToggleCompleted: () -> Unit,
+    onToggleFlagged: () -> Unit,
     onTap: () -> Unit,
     onSelectTopic: (String) -> Unit
 ) {
-    val levelColor = when (question.level) { 0 -> Level0; 1 -> Level1; 2 -> Level2; 4 -> Level4; else -> Level5 }
+    val levelColor = Color(QuizLoader.levelColorValue(question.level))
 
     Card(
         modifier = Modifier.clickable(onClick = onTap),
@@ -302,6 +330,17 @@ fun BrowseQuestionCard(
                         "Toggle completed",
                         tint = if (isCompleted) Correct else TextDim,
                         modifier = Modifier.size(24.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onToggleFlagged,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        if (isFlagged) Icons.Filled.Flag else Icons.Filled.OutlinedFlag,
+                        "Toggle flagged",
+                        tint = if (isFlagged) Warning else TextDim,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
                 Spacer(Modifier.width(6.dp))
