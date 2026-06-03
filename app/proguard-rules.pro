@@ -1,2 +1,2 @@
 -keepattributes *Annotation*
--keep class com.pythonquiz.app.data.** { *; }
+-keep class com.inxeoz.pythonquiz.data.** { *; }

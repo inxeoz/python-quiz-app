@@ -1,4 +1,4 @@
-package com.pythonquiz.app.data
+package com.inxeoz.pythonquiz.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -77,6 +77,9 @@ class ProgressStore(private val context: Context) {
         prefs[searchHistoryKey] ?: emptySet()
     }
 
+    // FIXME: Set trimming via `.drop(size - 20).toSet()` is non-deterministic —
+    // HashSet iteration order is not guaranteed. Consider migrating search history
+    // to a JSON-serialized list (most recent first) for deterministic eviction.
     suspend fun addSearchQuery(query: String) {
         context.dataStore.edit { prefs ->
             val current = prefs[searchHistoryKey] ?: emptySet()

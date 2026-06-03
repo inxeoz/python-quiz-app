@@ -1,0 +1,282 @@
+[
+  {
+    "id": 1001,
+    "level": 0,
+    "topic": "Painting",
+    "question": "Who painted the Mona Lisa?",
+    "options": [
+      "Leonardo da Vinci",
+      "Michelangelo",
+      "Raphael",
+      "Donatello"
+    ],
+    "answer": "Leonardo da Vinci",
+    "explanation": "The Mona Lisa was painted by Leonardo da Vinci in the early 16th century."
+  },
+  {
+    "id": 1002,
+    "level": 0,
+    "topic": "Painting",
+    "question": "Which artist painted 'Starry Night'?",
+    "options": [
+      "Vincent van Gogh",
+      "Pablo Picasso",
+      "Claude Monet",
+      "Salvador Dali"
+    ],
+    "answer": "Vincent van Gogh",
+    "explanation": "Starry Night is one of Vincent van Gogh's most famous paintings, created in 1889."
+  },
+  {
+    "id": 1003,
+    "level": 0,
+    "topic": "Art History",
+    "question": "Which art movement is Pablo Picasso known for co-founding?",
+    "options": [
+      "Cubism",
+      "Impressionism",
+      "Renaissance",
+      "Baroque"
+    ],
+    "answer": "Cubism",
+    "explanation": "Pablo Picasso, along with Georges Braque, co-founded the Cubist movement in the early 20th century."
+  },
+  {
+    "id": 1004,
+    "level": 0,
+    "topic": "Art History",
+    "question": "The Renaissance art movement began in which country?",
+    "options": [
+      "Italy",
+      "France",
+      "Spain",
+      "Germany"
+    ],
+    "answer": "Italy",
+    "explanation": "The Renaissance began in Italy in the 14th century before spreading across Europe."
+  },
+  {
+    "id": 1005,
+    "level": 0,
+    "topic": "Painting",
+    "question": "What painting technique uses small dots of color?",
+    "options": [
+      "Pointillism",
+      "Impressionism",
+      "Surrealism",
+      "Realism"
+    ],
+    "answer": "Pointillism",
+    "explanation": "Pointillism is a technique where small distinct dots of color are applied to form an image."
+  },
+  {
+    "id": 1006,
+    "level": 0,
+    "topic": "Music",
+    "question": "How many notes are in a standard Western musical scale?",
+    "options": [
+      "7",
+      "5",
+      "8",
+      "12"
+    ],
+    "answer": "7",
+    "explanation": "A standard Western scale has 7 notes: A, B, C, D, E, F, G."
+  },
+  {
+    "id": 1007,
+    "level": 0,
+    "topic": "Music",
+    "question": "Which instrument has 88 keys?",
+    "options": [
+      "Piano",
+      "Guitar",
+      "Violin",
+      "Flute"
+    ],
+    "answer": "Piano",
+    "explanation": "A standard piano has 88 keys: 52 white keys and 36 black keys."
+  },
+  {
+    "id": 1008,
+    "level": 0,
+    "topic": "Music",
+    "question": "What is the musical term for the speed of a piece?",
+    "options": [
+      "Tempo",
+      "Pitch",
+      "Volume",
+      "Rhythm"
+    ],
+    "answer": "Tempo",
+    "explanation": "Tempo is the speed or pace of a given piece of music."
+  },
+  {
+    "id": 1009,
+    "level": 0,
+    "topic": "Literature",
+    "question": "Who wrote 'Romeo and Juliet'?",
+    "options": [
+      "William Shakespeare",
+      "Charles Dickens",
+      "Jane Austen",
+      "Mark Twain"
+    ],
+    "answer": "William Shakespeare",
+    "explanation": "Romeo and Juliet was written by William Shakespeare around 1595."
+  },
+  {
+    "id": 1010,
+    "level": 0,
+    "topic": "Literature",
+    "question": "Which novel begins with 'Call me Ishmael'?",
+    "options": [
+      "Moby-Dick",
+      "The Great Gatsby",
+      "Pride and Prejudice",
+      "1984"
+    ],
+    "answer": "Moby-Dick",
+    "explanation": "Moby-Dick by Herman Melville opens with the famous line 'Call me Ishmael.'"
+  },
+  {
+    "id": 1011,
+    "level": 0,
+    "topic": "Literature",
+    "question": "Who wrote 'The Great Gatsby'?",
+    "options": [
+      "F. Scott Fitzgerald",
+      "Ernest Hemingway",
+      "John Steinbeck",
+      "William Faulkner"
+    ],
+    "answer": "F. Scott Fitzgerald",
+    "explanation": "The Great Gatsby was written by American author F. Scott Fitzgerald and published in 1925."
+  },
+  {
+    "id": 1012,
+    "level": 0,
+    "topic": "Painting",
+    "question": "Which artist is famous for painting soup cans?",
+    "options": [
+      "Andy Warhol",
+      "Roy Lichtenstein",
+      "Jasper Johns",
+      "Keith Haring"
+    ],
+    "answer": "Andy Warhol",
+    "explanation": "Andy Warhol's Campbell's Soup Cans (1962) is an iconic work of the Pop Art movement."
+  },
+  {
+    "id": 1013,
+    "level": 0,
+    "topic": "Art History",
+    "question": "The Sistine Chapel ceiling was painted by which artist?",
+    "options": [
+      "Michelangelo",
+      "Leonardo da Vinci",
+      "Raphael",
+      "Caravaggio"
+    ],
+    "answer": "Michelangelo",
+    "explanation": "Michelangelo painted the Sistine Chapel ceiling between 1508 and 1512."
+  },
+  {
+    "id": 1014,
+    "level": 0,
+    "topic": "Painting",
+    "question": "Which color is made by mixing blue and yellow?",
+    "options": [
+      "Green",
+      "Purple",
+      "Orange",
+      "Brown"
+    ],
+    "answer": "Green",
+    "explanation": "Blue and yellow are primary colors in subtractive color mixing that combine to make green."
+  },
+  {
+    "id": 1015,
+    "level": 0,
+    "topic": "Music",
+    "question": "What family of instruments does the violin belong to?",
+    "options": [
+      "Strings",
+      "Woodwinds",
+      "Brass",
+      "Percussion"
+    ],
+    "answer": "Strings",
+    "explanation": "The violin is a string instrument, typically played with a bow."
+  },
+  {
+    "id": 1016,
+    "level": 0,
+    "topic": "Literature",
+    "question": "Who wrote 'Pride and Prejudice'?",
+    "options": [
+      "Jane Austen",
+      "Emily Bronte",
+      "Charlotte Bronte",
+      "Mary Shelley"
+    ],
+    "answer": "Jane Austen",
+    "explanation": "Pride and Prejudice was written by Jane Austen and published in 1813."
+  },
+  {
+    "id": 1017,
+    "level": 0,
+    "topic": "Art History",
+    "question": "Impressionism is named after a painting by which artist?",
+    "options": [
+      "Claude Monet",
+      "Edgar Degas",
+      "Pierre-Auguste Renoir",
+      "Edouard Manet"
+    ],
+    "answer": "Claude Monet",
+    "explanation": "The term Impressionism comes from Monet's painting 'Impression, Sunrise' (1872)."
+  },
+  {
+    "id": 1018,
+    "level": 0,
+    "topic": "Painting",
+    "question": "What is a painting of a person called?",
+    "options": [
+      "Portrait",
+      "Landscape",
+      "Still life",
+      "Abstract"
+    ],
+    "answer": "Portrait",
+    "explanation": "A portrait is an artistic representation of a person, focusing on the face and expression."
+  },
+  {
+    "id": 1019,
+    "level": 0,
+    "topic": "Music",
+    "question": "Which composer became deaf later in life?",
+    "options": [
+      "Ludwig van Beethoven",
+      "Wolfgang Amadeus Mozart",
+      "Johann Sebastian Bach",
+      "Frédéric Chopin"
+    ],
+    "answer": "Ludwig van Beethoven",
+    "explanation": "Beethoven began losing his hearing in his late 20s and was almost completely deaf when he composed his Ninth Symphony."
+  },
+  {
+    "id": 1020,
+    "level": 0,
+    "topic": "Literature",
+    "question": "Who is the author of the Harry Potter series?",
+    "options": [
+      "J.K. Rowling",
+      "J.R.R. Tolkien",
+      "C.S. Lewis",
+      "Roald Dahl"
+    ],
+    "answer": "J.K. Rowling",
+    "explanation": "The Harry Potter series was written by British author J.K. Rowling."
+  }
+]

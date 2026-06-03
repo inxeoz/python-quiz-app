@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Quiz App - Welcome</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.004 240);
+      --surface: oklch(100% 0 0);
+      --fg:      oklch(20% 0.02 240);
+      --muted:   oklch(50% 0.018 240);
+      --border:  oklch(90% 0.006 240);
+      --accent:  oklch(56% 0.12 170);
+      --accent-muted: oklch(92% 0.04 170);
+
+      --font-display: 'Avenir Next', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme="dark"] {
+      --bg:      oklch(14% 0.015 250);
+      --surface: oklch(20% 0.012 250);
+      --fg:      oklch(90% 0.005 250);
+      --muted:   oklch(60% 0.01 250);
+      --border:  oklch(28% 0.01 250);
+      --accent:  oklch(62% 0.14 170);
+      --accent-muted: oklch(25% 0.04 170);
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    body.dark-transition,
+    body.dark-transition * {
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s !important;
+    }
+
+    .app-container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 40px;
+      margin-bottom: 24px;
+    }
+
+    .header-title {
+      flex: 1;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      margin-top: 4px;
+    }
+
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.2s, border-color 0.3s, color 0.2s;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .search-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .search-bar input {
+      border: none;
+      outline: none;
+      width: 100%;
+      font-size: 16px;
+      color: var(--fg);
+      background: transparent;
+    }
+
+    .search-bar input::placeholder {
+      color: var(--muted);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .level-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 24px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .level-row::-webkit-scrollbar { display: none; }
+
+    .level-chip {
+      flex-shrink: 0;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .level-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .level-chip.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: oklch(98% 0 0);
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .category-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.3s, border-color 0.3s;
+      box-shadow: var(--shadow);
+    }
+
+    .category-card:active {
+      transform: scale(0.96);
+    }
+
+    .category-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .card-count {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .c-blue { background: oklch(90% 0.08 240); color: oklch(50% 0.2 240); }
+    .c-green { background: oklch(90% 0.08 150); color: oklch(50% 0.2 150); }
+    .c-purple { background: oklch(90% 0.08 300); color: oklch(50% 0.2 300); }
+    .c-orange { background: oklch(90% 0.08 40); color: oklch(50% 0.2 40); }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0 32px;
+      z-index: 100;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+    }
+
+    .nav-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    @media (max-width: 430px) {
+      .app-container { padding: 20px 16px; }
+      header { margin-top: 24px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div class="header-title">
+        <h1>Let's test your knowledge</h1>
+        <p class="subtitle">Choose a level and category</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </header>
+
+    <div class="search-bar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search categories..." />
+    </div>
+
+    <h2 class="section-title">Difficulty Level</h2>
+
+    <div class="level-row" id="levelRow">
+      <span class="level-chip" data-level="0">Basic</span>
+      <span class="level-chip" data-level="1">Beginner</span>
+      <span class="level-chip selected" data-level="2">Intermediate</span>
+      <span class="level-chip" data-level="3">Advanced</span>
+      <span class="level-chip" data-level="4">Expert</span>
+    </div>
+
+    <h2 class="section-title">Categories</h2>
+
+    <div class="category-grid">
+      <a href="02-quiz-active.html" class="category-card">
+        <div class="category-icon c-blue"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></div>
+        <div class="card-info">
+          <div class="card-title">Arts</div>
+          <div class="card-count">24 Quizzes</div>
+        </div>
+      </a>
+
+      <a href="02-quiz-active.html" class="category-card">
+        <div class="category-icon c-green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="8" ry="3"/><ellipse cx="12" cy="12" rx="3" ry="8" transform="rotate(45 12 12)"/></svg></div>
+        <div class="card-info">
+          <div class="card-title">Science</div>
+          <div class="card-count">18 Quizzes</div>
+        </div>
+      </a>
+
+      <a href="02-quiz-active.html" class="category-card">
+        <div class="category-icon c-purple"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="15" rx="2"/><path d="M8 22h8"/><path d="M12 19v3"/></svg></div>
+        <div class="card-info">
+          <div class="card-title">Tech</div>
+          <div class="card-count">32 Quizzes</div>
+        </div>
+      </a>
+
+      <a href="02-quiz-active.html" class="category-card">
+        <div class="category-icon c-orange"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+        <div class="card-info">
+          <div class="card-title">Sports</div>
+          <div class="card-count">15 Quizzes</div>
+        </div>
+      </a>
+    </div>
+
+    <div style="height: 100px;"></div>
+
+    <nav class="bottom-nav">
+      <a href="#" class="nav-item active">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v9a1 1 0 001 1h4v-6h6v6h4a1 1 0 001-1v-9"/></svg></span>
+        <span>Home</span>
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M6 16V9"/><path d="M10 16V4"/><path d="M14 16v-5"/><path d="M18 16V7"/></svg></span>
+        <span>Stats</span>
+      </a>
+      <a href="05-flagged.html" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V3l12-1v14L4 17"/><path d="M16 3v14"/></svg></span>
+        <span>Flagged</span>
+      </a>
+      <a href="04-profile.html" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+        <span>Profile</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    (function() {
+      var QUIZ_LEVEL_KEY = 'quiz-selected-level';
+      var THEME_KEY = 'quiz-theme';
+
+      function restoreTheme() {
+        var saved;
+        try { saved = localStorage.getItem(THEME_KEY); } catch(e) {}
+        if (saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      }
+      restoreTheme();
+
+      var chips = document.querySelectorAll('.level-chip');
+      chips.forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          chips.forEach(function(c) { c.classList.remove('selected'); });
+          this.classList.add('selected');
+          var levelIdx = parseInt(this.getAttribute('data-level'), 10);
+          try { sessionStorage.setItem(QUIZ_LEVEL_KEY, String(levelIdx)); } catch(e) {}
+        });
+      });
+
+      var toggleBtn = document.getElementById('themeToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          var html = document.documentElement;
+          var isDark = html.getAttribute('data-theme') === 'dark';
+          var body = document.body;
+          body.classList.add('dark-transition');
+          if (isDark) {
+            html.removeAttribute('data-theme');
+            try { localStorage.setItem(THEME_KEY, 'light'); } catch(e) {}
+          } else {
+            html.setAttribute('data-theme', 'dark');
+            try { localStorage.setItem(THEME_KEY, 'dark'); } catch(e) {}
+          }
+          setTimeout(function() { body.classList.remove('dark-transition'); }, 400);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

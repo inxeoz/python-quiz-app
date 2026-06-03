@@ -1,4 +1,4 @@
-package com.pythonquiz.app.data
+package com.inxeoz.pythonquiz.data
 
 import kotlinx.serialization.Serializable
 
@@ -10,5 +10,6 @@ data class Question(
     val question: String,
     val options: List<String>,
     val answer: String,
-    val explanation: String
+    val explanation: String,
+    val category: String = ""   // assigned by QuizLoader from source file
 )

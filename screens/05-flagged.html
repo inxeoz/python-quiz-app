@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Quiz App - Flagged Questions</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.004 240);
+      --surface: oklch(100% 0 0);
+      --fg:      oklch(20% 0.02 240);
+      --muted:   oklch(50% 0.018 240);
+      --border:  oklch(90% 0.006 240);
+      --accent:  oklch(56% 0.12 170);
+      --accent-muted: oklch(92% 0.04 170);
+
+      --font-display: 'Avenir Next', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme="dark"] {
+      --bg:      oklch(14% 0.015 250);
+      --surface: oklch(20% 0.012 250);
+      --fg:      oklch(90% 0.005 250);
+      --muted:   oklch(60% 0.01 250);
+      --border:  oklch(28% 0.01 250);
+      --accent:  oklch(62% 0.14 170);
+      --accent-muted: oklch(25% 0.04 170);
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    body.dark-transition,
+    body.dark-transition * {
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s !important;
+    }
+
+    .app-container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 40px;
+      margin-bottom: 28px;
+    }
+
+    .back-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      color: var(--fg);
+      transition: background 0.2s, border-color 0.3s;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.2s, border-color 0.3s, color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .flagged-count {
+      font-size: 12px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--muted);
+      background: var(--border);
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+
+    .flagged-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 100px;
+    }
+
+    .flagged-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .flagged-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .flagged-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .flagged-meta-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .flagged-question {
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--fg);
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .flagged-options {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .flagged-option {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 4px 0;
+      display: flex;
+      gap: 8px;
+    }
+
+    .flagged-option .opt-label {
+      font-weight: 600;
+      color: var(--fg);
+      width: 20px;
+      flex-shrink: 0;
+    }
+
+    .unflag-btn {
+      margin-top: 10px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .unflag-btn:hover {
+      border-color: oklch(55% 0.22 30);
+      color: oklch(55% 0.22 30);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      color: var(--border);
+      margin-bottom: 16px;
+    }
+
+    .empty-state-title {
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--fg);
+      margin-bottom: 6px;
+    }
+
+    .empty-state-desc {
+      font-size: 14px;
+    }
+
+    .clear-all-btn {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid oklch(55% 0.22 30 / 0.3);
+      background: transparent;
+      color: oklch(55% 0.22 30);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-all-btn:hover {
+      background: oklch(55% 0.22 30 / 0.1);
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0 32px;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+    }
+
+    .nav-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--fg);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 430px) {
+      .app-container { padding: 20px 16px; }
+      header { margin-top: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <a href="01-welcome.html" class="back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </a>
+      <span class="page-title">Flagged Questions</span>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </header>
+
+    <div class="section-title">
+      <span>All Flagged Questions</span>
+      <span class="flagged-count" id="flaggedCount">0</span>
+    </div>
+
+    <div class="flagged-list" id="flaggedList">
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 42V6l24-2v28L8 34"/><path d="M32 6v28"/></svg>
+        <div class="empty-state-title">No flagged questions</div>
+        <div class="empty-state-desc">Flag questions during a quiz to review them here.</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="01-welcome.html" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v9a1 1 0 001 1h4v-6h6v6h4a1 1 0 001-1v-9"/></svg></span>
+      <span>Home</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M6 16V9"/><path d="M10 16V4"/><path d="M14 16v-5"/><path d="M18 16V7"/></svg></span>
+      <span>Stats</span>
+    </a>
+    <a href="05-flagged.html" class="nav-item active">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V3l12-1v14L4 17"/><path d="M16 3v14"/></svg></span>
+      <span>Flagged</span>
+    </a>
+    <a href="04-profile.html" class="nav-item">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+      <span>Profile</span>
+    </a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      var FLAGGED_KEY = 'quiz-flagged-questions';
+      var THEME_KEY = 'quiz-theme';
+
+      function restoreTheme() {
+        var saved;
+        try { saved = localStorage.getItem(THEME_KEY); } catch(e) {}
+        if (saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      }
+      restoreTheme();
+
+      function getFlagged() {
+        var raw;
+        try { raw = localStorage.getItem(FLAGGED_KEY); } catch(e) { return []; }
+        try { return JSON.parse(raw) || []; } catch(e) { return []; }
+      }
+
+      function saveFlagged(list) {
+        try { localStorage.setItem(FLAGGED_KEY, JSON.stringify(list)); } catch(e) {}
+      }
+
+      var labels = ['A', 'B', 'C', 'D'];
+      var listEl = document.getElementById('flaggedList');
+      var countEl = document.getElementById('flaggedCount');
+      var toastEl = document.getElementById('toast');
+      var toastTimer;
+
+      function showToast(msg) {
+        if (!toastEl) return;
+        clearTimeout(toastTimer);
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 2000);
+      }
+
+      function render() {
+        var list = getFlagged();
+        if (countEl) countEl.textContent = list.length;
+
+        if (list.length === 0) {
+          listEl.innerHTML = '<div class="empty-state" id="emptyState">' +
+            '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 42V6l24-2v28L8 34"/><path d="M32 6v28"/></svg>' +
+            '<div class="empty-state-title">No flagged questions</div>' +
+            '<div class="empty-state-desc">Flag questions during a quiz to review them here.</div>' +
+            '</div>';
+          return;
+        }
+
+        var html = '';
+        if (list.length > 1) {
+          html += '<div style="text-align:right;margin-bottom:8px;">' +
+            '<button class="clear-all-btn" id="clearAllBtn">Clear All</button>' +
+            '</div>';
+        }
+
+        list.forEach(function(q, i) {
+          var optionsHtml = '';
+          if (q.options && q.options.length) {
+            optionsHtml += '<div class="flagged-options">';
+            q.options.forEach(function(opt, oi) {
+              var marker = oi === q.correctIndex ? ' style="color:var(--accent);font-weight:600;"' : '';
+              optionsHtml += '<div class="flagged-option"><span class="opt-label"' + marker + '>' + (labels[oi] || oi) + '.</span><span' + marker + '>' + opt + '</span></div>';
+            });
+            optionsHtml += '</div>';
+          }
+          html += '<div class="flagged-card" data-index="' + i + '">' +
+            '<div class="flagged-card-header">' +
+            '<div class="flagged-meta">' +
+            '<span>' + (q.category || 'General') + '</span>' +
+            '<span class="flagged-meta-dot"></span>' +
+            '<span>' + (q.level || '--') + '</span>' +
+            '</div>' +
+            '</div>' +
+            '<div class="flagged-question">' + q.question + '</div>' +
+            optionsHtml +
+            '<button class="unflag-btn" data-index="' + i + '">Remove flag</button>' +
+            '</div>';
+        });
+        listEl.innerHTML = html;
+
+        if (list.length > 1) {
+          var clearBtn = document.getElementById('clearAllBtn');
+          if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+              saveFlagged([]);
+              showToast('All flags cleared');
+              render();
+            });
+          }
+        }
+
+        listEl.querySelectorAll('.unflag-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var idx = parseInt(this.getAttribute('data-index'), 10);
+            var list = getFlagged();
+            if (idx >= 0 && idx < list.length) {
+              list.splice(idx, 1);
+              saveFlagged(list);
+              showToast('Flag removed');
+              render();
+            }
+          });
+        });
+      }
+
+      var toggleBtn = document.getElementById('themeToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          var html = document.documentElement;
+          var isDark = html.getAttribute('data-theme') === 'dark';
+          var body = document.body;
+          body.classList.add('dark-transition');
+          if (isDark) {
+            html.removeAttribute('data-theme');
+            try { localStorage.setItem(THEME_KEY, 'light'); } catch(e) {}
+          } else {
+            html.setAttribute('data-theme', 'dark');
+            try { localStorage.setItem(THEME_KEY, 'dark'); } catch(e) {}
+          }
+          setTimeout(function() { body.classList.remove('dark-transition'); }, 400);
+        });
+      }
+
+      render();
+    })();
+  </script>
+</body>
+</html>

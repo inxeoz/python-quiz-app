@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.pythonquiz.app"
+    namespace = "com.inxeoz.pythonquiz"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.pythonquiz.app"
+        applicationId = "com.inxeoz.pythonquiz"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -55,7 +55,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.animation:animation")
-    implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 

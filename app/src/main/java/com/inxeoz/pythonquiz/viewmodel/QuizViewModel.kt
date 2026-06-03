@@ -1,13 +1,15 @@
-package com.pythonquiz.app.viewmodel
+package com.inxeoz.pythonquiz.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.pythonquiz.app.data.ProgressStore
-import com.pythonquiz.app.data.Question
-import com.pythonquiz.app.data.QuizLoader
-import com.pythonquiz.app.data.SavedQuizAttempt
-import com.pythonquiz.app.data.SavedQuizSession
+import com.inxeoz.pythonquiz.data.ProgressStore
+import com.inxeoz.pythonquiz.data.Question
+import com.inxeoz.pythonquiz.data.QuizLoader
+import com.inxeoz.pythonquiz.data.SavedQuizAttempt
+import com.inxeoz.pythonquiz.data.SavedQuizSession
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,8 @@ data class QuizSession(
     val currentIndex: Int = 0,
     val timedMode: Boolean = false,
     val timeLimitMinutes: Int = 0,
-    val remainingSeconds: Int = 0
+    val remainingSeconds: Int = 0,
+    val revealedAnswers: Set<Int> = emptySet()
 )
 
 data class QuizUiState(
@@ -59,6 +62,11 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     var allQuestions: List<Question> = emptyList()
         private set
+
+    private var autoAdvanceJob: Job? = null
+
+    val categories: List<QuizLoader.CategoryInfo>
+        get() = QuizLoader.getCategories(allQuestions)
 
     init {
         loadQuestions()
@@ -121,7 +129,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             timeLimitMinutes = if (timedMode) timeLimitMinutes else 0,
             remainingSeconds = if (timedMode) timeLimitMinutes * 60 else 0
         )
-
         _state.value = _state.value.copy(
             session = session,
             currentScreen = Screen.Quiz,
@@ -144,19 +151,65 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         persistSession(session)
     }
 
+    fun startQuizForCategory(category: String, selectedLevels: Set<Int>) {
+        val pool = QuizLoader.questionsForCategory(allQuestions, category, selectedLevels)
+        if (pool.isEmpty()) return
+        val qs = pool.shuffled()
+        val session = QuizSession(
+            questions = qs,
+            optionOrders = qs.associate { q -> q.id to q.options.shuffled() }
+        )
+        _state.value = _state.value.copy(
+            session = session,
+            currentScreen = Screen.Quiz,
+            hasSavedSession = true
+        )
+        persistSession(session)
+    }
+
+    fun countForCategory(category: String, levels: Set<Int>): Int =
+        QuizLoader.countForCategoryLevels(allQuestions, category, levels)
+
     fun selectAnswer(questionId: Int, option: String) {
         val s = _state.value.session
-        if (s.submitted) return
-        updateSession(s.copy(answers = s.answers + (questionId to option)))
+        if (s.submitted || questionId in s.revealedAnswers) return
+        updateSession(s.copy(
+            answers = s.answers + (questionId to option),
+            revealedAnswers = s.revealedAnswers + questionId
+        ))
+        scheduleAutoAdvance(s, questionId)
+    }
+
+    private fun scheduleAutoAdvance(session: QuizSession, questionId: Int) {
+        autoAdvanceJob?.cancel()
+        val question = session.questions.find { it.id == questionId } ?: return
+        val options = session.optionOrders[questionId] ?: question.options
+        val totalChars = question.question.length + options.sumOf { it.length }
+        val delayMs = (totalChars * 40L).coerceIn(2500L, 8000L)
+        autoAdvanceJob = viewModelScope.launch {
+            delay(delayMs)
+            val s = _state.value.session
+            if (s.submitted) return@launch
+            val idx = s.currentIndex
+            if (idx >= s.questions.lastIndex) submitQuiz()
+            else navigateQuestion(1)
+        }
+    }
+
+    private fun cancelAutoAdvance() {
+        autoAdvanceJob?.cancel()
+        autoAdvanceJob = null
     }
 
     fun navigateQuestion(delta: Int) {
+        cancelAutoAdvance()
         val s = _state.value.session
         val next = (s.currentIndex + delta).coerceIn(0, s.questions.lastIndex)
         updateSession(s.copy(currentIndex = next))
     }
 
     fun jumpToQuestion(index: Int) {
+        cancelAutoAdvance()
         val s = _state.value.session
         if (index !in s.questions.indices) return
         updateSession(s.copy(currentIndex = index))
@@ -168,7 +221,15 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearAllFlagged() {
+        viewModelScope.launch {
+            val ids = flaggedIds.value.toList()
+            ids.forEach { progressStore.toggleFlagged(it) }
+        }
+    }
+
     fun submitQuiz() {
+        cancelAutoAdvance()
         val session = _state.value.session.copy(submitted = true)
         _state.value = _state.value.copy(
             session = session,
@@ -196,6 +257,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun goToSetup() {
+        cancelAutoAdvance()
         _state.value = _state.value.copy(
             session = QuizSession(),
             currentScreen = Screen.Setup,
@@ -272,16 +334,14 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         startQuizFromQuestions(questions, shuffle = false, shuffleOptions = true)
     }
 
-    fun shareQuestionText(question: Question): String {
-        return buildString {
-            appendLine(question.question)
-            question.options.forEachIndexed { index, option ->
-                appendLine("${QuizLoader.optionLabel(index)}. $option")
-            }
-            appendLine()
-            appendLine("Answer: ${question.answer}")
-            append("Explanation: ${question.explanation}")
+    fun shareQuestionText(question: Question): String = buildString {
+        appendLine(question.question)
+        question.options.forEachIndexed { index, option ->
+            appendLine("${QuizLoader.optionLabel(index)}. $option")
         }
+        appendLine()
+        appendLine("Answer: ${question.answer}")
+        append("Explanation: ${question.explanation}")
     }
 
     fun shareScoreSummary(): String {

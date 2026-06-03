@@ -1,0 +1,212 @@
+[
+  {
+    "id": 4001,
+    "level": 0,
+    "topic": "Olympics",
+    "question": "How often are the Summer Olympic Games held?",
+    "options": [
+      "Every 4 years",
+      "Every 2 years",
+      "Every year",
+      "Every 5 years"
+    ],
+    "answer": "Every 4 years",
+    "explanation": "The Summer Olympics are held every four years, with the next edition following the previous by four years."
+  },
+  {
+    "id": 4002,
+    "level": 0,
+    "topic": "Olympics",
+    "question": "What do the five Olympic rings represent?",
+    "options": [
+      "The five continents",
+      "The five founding countries",
+      "The five original sports",
+      "The five judges"
+    ],
+    "answer": "The five continents",
+    "explanation": "The five Olympic rings represent the five inhabited continents: Africa, Americas, Asia, Europe, and Oceania."
+  },
+  {
+    "id": 4003,
+    "level": 0,
+    "topic": "Olympics",
+    "question": "Where did the ancient Olympic Games originate?",
+    "options": [
+      "Greece",
+      "Rome",
+      "Egypt",
+      "China"
+    ],
+    "answer": "Greece",
+    "explanation": "The ancient Olympic Games originated in Olympia, Greece, around 776 BC."
+  },
+  {
+    "id": 4004,
+    "level": 0,
+    "topic": "Soccer",
+    "question": "How many players are on a soccer team on the field?",
+    "options": [
+      "11",
+      "9",
+      "10",
+      "12"
+    ],
+    "answer": "11",
+    "explanation": "A standard soccer team has 11 players on the field, including the goalkeeper."
+  },
+  {
+    "id": 4005,
+    "level": 0,
+    "topic": "Soccer",
+    "question": "Which country has won the most FIFA World Cup titles?",
+    "options": [
+      "Brazil",
+      "Germany",
+      "Argentina",
+      "Italy"
+    ],
+    "answer": "Brazil",
+    "explanation": "Brazil has won the FIFA World Cup a record 5 times."
+  },
+  {
+    "id": 4006,
+    "level": 0,
+    "topic": "Soccer",
+    "question": "What color card does a player get for a serious foul?",
+    "options": [
+      "Red",
+      "Yellow",
+      "Blue",
+      "Green"
+    ],
+    "answer": "Red",
+    "explanation": "A red card is shown for serious fouls and results in the player being sent off the field."
+  },
+  {
+    "id": 4007,
+    "level": 0,
+    "topic": "Basketball",
+    "question": "How many players are on a basketball team on the court?",
+    "options": [
+      "5",
+      "6",
+      "7",
+      "11"
+    ],
+    "answer": "5",
+    "explanation": "Each basketball team has 5 players on the court at a time."
+  },
+  {
+    "id": 4008,
+    "level": 0,
+    "topic": "Basketball",
+    "question": "In which league did Michael Jordan become famous?",
+    "options": [
+      "NBA",
+      "NFL",
+      "MLB",
+      "NHL"
+    ],
+    "answer": "NBA",
+    "explanation": "Michael Jordan became a global icon playing in the NBA, primarily for the Chicago Bulls."
+  },
+  {
+    "id": 4009,
+    "level": 0,
+    "topic": "Basketball",
+    "question": "How many points is a standard basket worth?",
+    "options": [
+      "2 points",
+      "1 point",
+      "3 points",
+      "4 points"
+    ],
+    "answer": "2 points",
+    "explanation": "A standard field goal inside the three-point line is worth 2 points."
+  },
+  {
+    "id": 4010,
+    "level": 0,
+    "topic": "Tennis",
+    "question": "What is the term for a score of 40-40 in tennis?",
+    "options": [
+      "Deuce",
+      "Love",
+      "Advantage",
+      "Set point"
+    ],
+    "answer": "Deuce",
+    "explanation": "Deuce is the term used when both players have scored three points each (40-40)."
+  },
+  {
+    "id": 4011,
+    "level": 0,
+    "topic": "Tennis",
+    "question": "Which tennis tournament is played on grass courts?",
+    "options": [
+      "Wimbledon",
+      "French Open",
+      "US Open",
+      "Australian Open"
+    ],
+    "answer": "Wimbledon",
+    "explanation": "Wimbledon is the oldest tennis tournament and the only Grand Slam still played on grass."
+  },
+  {
+    "id": 4012,
+    "level": 0,
+    "topic": "Tennis",
+    "question": "How many Grand Slam tournaments are there?",
+    "options": [
+      "4",
+      "3",
+      "5",
+      "6"
+    ],
+    "answer": "4",
+    "explanation": "There are four Grand Slam tournaments: Australian Open, French Open, Wimbledon, and US Open."
+  },
+  {
+    "id": 4013,
+    "level": 0,
+    "topic": "General Sports",
+    "question": "Which sport uses a bat and a ball and is popular in India?",
+    "options": [
+      "Cricket",
+      "Baseball",
+      "Tennis",
+      "Golf"
+    ],
+    "answer": "Cricket",
+    "explanation": "Cricket is extremely popular in India and uses a bat and ball."
+  },
+  {
+    "id": 4014,
+    "level": 0,
+    "topic": "Olympics",
+    "question": "What color is the top medal awarded at the Olympics?",
+    "options": [
+      "Gold",
+      "Silver",
+      "Bronze",
+      "Platinum"
+    ],
+    "answer": "Gold",
+    "explanation": "The gold medal is awarded for first place at the Olympic Games."
+  },
+  {
+    "id": 4015,
+    "level": 0,
+    "topic": "General Sports",
+    "question": "Which sport is played at the Tour de France?",
+    "options": [
+      "Cycling",
+      "Running",
+      "Swimming",
+      "Skiing"
+    ],
+    "answer": "Cycling",
+    "explanation": "The Tour de France is the world's most famous cycling race, held annually in France."
+  }
+]

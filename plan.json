@@ -1,0 +1,8 @@
+[
+  { "id": "1", "task": "Initialize project with Human / Approachable design tokens", "status": "todo" },
+  { "id": "2", "task": "Create screens/01-welcome.html: Welcome & Category Selection", "status": "todo" },
+  { "id": "3", "task": "Create screens/02-quiz-active.html: Interactive Quiz Interface with progress & feedback", "status": "todo" },
+  { "id": "4", "task": "Create screens/03-results.html: Result Summary & Review", "status": "todo" },
+  { "id": "5", "task": "Create index.html as a multi-device gallery launcher", "status": "todo" },
+  { "id": "6", "task": "Self-check: Run 5-dim critique and refine UX", "status": "todo" }
+]
