@@ -1,5 +1,10 @@
 package com.inxeoz.pythonquiz.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -24,6 +29,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,11 +54,15 @@ import com.inxeoz.pythonquiz.ui.theme.QuizColors
 import com.inxeoz.pythonquiz.viewmodel.QuizViewModel
 
 @Composable
-fun QuizScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
+fun QuizScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit) {
     val state by vm.state.collectAsState()
     val colors = LocalQuizColors.current
     val session = state.session
     val questions = session.questions
+
+    BackHandler {
+        vm.goToSetup()
+    }
 
     if (questions.isEmpty()) return
 
@@ -80,6 +92,7 @@ fun QuizScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
                 topic = question.topic,
                 level = question.level,
                 colors = colors,
+                isDark = isDark,
                 onBack = { vm.goToSetup() },
                 onThemeToggle = onThemeToggle
             )
@@ -98,6 +111,8 @@ fun QuizScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
             QuestionCard(
                 questionIndex = currentIndex + 1,
                 questionText = question.question,
+                question = question,
+                options = options,
                 isSubmitted = anyRevealedOrSubmitted,
                 colors = colors
             )
@@ -112,6 +127,15 @@ fun QuizScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
                 colors = colors,
                 onSelect = { vm.selectAnswer(question.id, it) }
             )
+
+            if (anyRevealedOrSubmitted) {
+                Spacer(modifier = Modifier.height(16.dp))
+                ExplanationCard(
+                    explanation = question.explanation,
+                    isCorrect = selectedAnswer == question.answer,
+                    colors = colors
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -143,6 +167,7 @@ private fun QuizHeader(
     topic: String,
     level: Int,
     colors: QuizColors,
+    isDark: Boolean,
     onBack: () -> Unit,
     onThemeToggle: () -> Unit
 ) {
@@ -179,10 +204,11 @@ private fun QuizHeader(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
+            val badgeColor = Color(QuizLoader.levelColorValue(level))
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
-                    .background(colors.accent)
+                    .background(badgeColor)
                     .padding(horizontal = 10.dp, vertical = 3.dp)
             ) {
                 Text(
@@ -202,7 +228,7 @@ private fun QuizHeader(
                 .border(1.dp, colors.border, CircleShape)
         ) {
             Icon(
-                Icons.Default.LightMode,
+                if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
                 contentDescription = "Toggle theme",
                 tint = colors.textMuted,
                 modifier = Modifier.size(18.dp)
@@ -267,9 +293,13 @@ private fun ProgressSection(
 private fun QuestionCard(
     questionIndex: Int,
     questionText: String,
+    question: com.inxeoz.pythonquiz.data.Question,
+    options: List<String>,
     isSubmitted: Boolean,
     colors: QuizColors
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -289,6 +319,28 @@ private fun QuestionCard(
                 fontWeight = FontWeight.Bold,
                 color = colors.textMuted
             )
+            IconButton(
+                onClick = {
+                    val text = buildString {
+                        appendLine(question.question)
+                        options.forEachIndexed { index, option ->
+                            appendLine("${QuizLoader.optionLabel(index)}. $option")
+                        }
+                    }
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Question", text)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Icons.Default.ContentCopy,
+                    contentDescription = "Copy question",
+                    tint = colors.textMuted,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -394,6 +446,36 @@ private fun OptionsList(
 }
 
 @Composable
+private fun ExplanationCard(
+    explanation: String,
+    isCorrect: Boolean,
+    colors: QuizColors
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isCorrect) colors.correct.copy(alpha = 0.08f) else colors.wrong.copy(alpha = 0.08f))
+            .border(1.dp, if (isCorrect) colors.correct else colors.wrong, RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = if (isCorrect) "Correct!" else "Incorrect",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isCorrect) colors.correct else colors.wrong
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = explanation,
+            fontSize = 14.sp,
+            color = colors.text,
+            lineHeight = 20.sp
+        )
+    }
+}
+
+@Composable
 private fun QuizFooter(
     isFirst: Boolean,
     isLast: Boolean,
@@ -407,7 +489,6 @@ private fun QuizFooter(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Previous button
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -426,7 +507,6 @@ private fun QuizFooter(
             )
         }
 
-        // Skip (unanswered) or Next (answered)
         val isFinish = isLast && isRevealed
         val actionLabel = when {
             isFinish -> "Finish"
@@ -457,4 +537,3 @@ private fun QuizFooter(
         }
     }
 }
-

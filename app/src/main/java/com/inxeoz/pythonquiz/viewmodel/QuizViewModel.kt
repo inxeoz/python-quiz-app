@@ -22,9 +22,6 @@ data class QuizSession(
     val optionOrders: Map<Int, List<String>> = emptyMap(),
     val submitted: Boolean = false,
     val currentIndex: Int = 0,
-    val timedMode: Boolean = false,
-    val timeLimitMinutes: Int = 0,
-    val remainingSeconds: Int = 0,
     val revealedAnswers: Set<Int> = emptySet()
 )
 
@@ -38,7 +35,6 @@ data class QuizUiState(
 )
 
 enum class Screen { Setup, Quiz, Report }
-enum class PracticeScope { All, NewOnly, Incomplete, Completed, ReviewDue }
 
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -91,61 +87,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
         }
-    }
-
-    fun startQuiz(
-        selectedLevels: Set<Int>,
-        count: Int,
-        shuffle: Boolean,
-        scope: PracticeScope = PracticeScope.All,
-        shuffleOptions: Boolean = true,
-        timedMode: Boolean = false,
-        timeLimitMinutes: Int = 20
-    ) {
-        val completed = completedIds.value
-        val seen = seenIds.value
-        val dueReview = dueReviewIds.value
-        val pool = allQuestions.filter {
-            it.level in selectedLevels && when (scope) {
-                PracticeScope.All -> true
-                PracticeScope.NewOnly -> it.id !in seen
-                PracticeScope.Incomplete -> it.id !in completed
-                PracticeScope.Completed -> it.id in completed
-                PracticeScope.ReviewDue -> it.id in dueReview
-            }
-        }
-        val qs = if (shuffle) pool.shuffled() else pool
-        val selected = if (count >= qs.size) qs else qs.take(count)
-        val optionOrders = selected.associate { q ->
-            q.id to if (shuffleOptions) q.options.shuffled() else q.options
-        }
-        val session = QuizSession(
-            questions = selected,
-            optionOrders = optionOrders,
-            timedMode = timedMode,
-            timeLimitMinutes = if (timedMode) timeLimitMinutes else 0,
-            remainingSeconds = if (timedMode) timeLimitMinutes * 60 else 0
-        )
-        _state.value = _state.value.copy(
-            session = session,
-            currentScreen = Screen.Quiz,
-            hasSavedSession = selected.isNotEmpty()
-        )
-        persistSession(session)
-    }
-
-    fun startQuizFromQuestions(questions: List<Question>, shuffle: Boolean = false, shuffleOptions: Boolean = true) {
-        val selected = if (shuffle) questions.shuffled() else questions
-        val session = QuizSession(
-            questions = selected,
-            optionOrders = selected.associate { q -> q.id to if (shuffleOptions) q.options.shuffled() else q.options }
-        )
-        _state.value = _state.value.copy(
-            session = session,
-            currentScreen = Screen.Quiz,
-            hasSavedSession = selected.isNotEmpty()
-        )
-        persistSession(session)
     }
 
     fun startQuizForLevels(selectedLevels: Set<Int>) {
@@ -219,13 +160,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         updateSession(s.copy(currentIndex = next))
     }
 
-    fun jumpToQuestion(index: Int) {
-        cancelAutoAdvance()
-        val s = _state.value.session
-        if (index !in s.questions.indices) return
-        updateSession(s.copy(currentIndex = index))
-    }
-
     fun submitQuiz() {
         cancelAutoAdvance()
         val session = _state.value.session.copy(submitted = true)
@@ -251,28 +185,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         )
         viewModelScope.launch {
             progressStore.clearActiveSession()
-        }
-    }
-
-    fun tickTimer() {
-        val s = _state.value.session
-        if (!s.timedMode || s.submitted || s.remainingSeconds <= 0) return
-        val updated = s.copy(remainingSeconds = s.remainingSeconds - 1)
-        updateSession(updated)
-        if (updated.remainingSeconds == 0) {
-            submitQuiz()
-        }
-    }
-
-    fun resumeSavedSession() {
-        viewModelScope.launch {
-            progressStore.getActiveSession()?.toSession(allQuestions)?.let { session ->
-                _state.value = _state.value.copy(
-                    session = session,
-                    currentScreen = Screen.Quiz,
-                    hasSavedSession = true
-                )
-            }
         }
     }
 
@@ -303,10 +215,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         answers = answers,
         currentIndex = currentIndex,
         submitted = submitted,
-        optionOrders = optionOrders,
-        timedMode = timedMode,
-        timeLimitMinutes = timeLimitMinutes,
-        remainingSeconds = remainingSeconds
+        optionOrders = optionOrders
     )
 
     private fun SavedQuizSession.toSession(allQuestions: List<Question>): QuizSession? {
@@ -318,10 +227,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             answers = answers,
             optionOrders = optionOrders.filterKeys { it in questionIds },
             submitted = submitted,
-            currentIndex = currentIndex.coerceIn(0, restoredQuestions.lastIndex),
-            timedMode = timedMode,
-            timeLimitMinutes = timeLimitMinutes,
-            remainingSeconds = remainingSeconds
+            currentIndex = currentIndex.coerceIn(0, restoredQuestions.lastIndex)
         )
     }
 }

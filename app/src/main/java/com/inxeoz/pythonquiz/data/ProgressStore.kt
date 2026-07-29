@@ -66,8 +66,5 @@ data class SavedQuizSession(
     val answers: Map<Int, String> = emptyMap(),
     val currentIndex: Int = 0,
     val submitted: Boolean = false,
-    val optionOrders: Map<Int, List<String>> = emptyMap(),
-    val timedMode: Boolean = false,
-    val timeLimitMinutes: Int = 0,
-    val remainingSeconds: Int = 0
+    val optionOrders: Map<Int, List<String>> = emptyMap()
 )

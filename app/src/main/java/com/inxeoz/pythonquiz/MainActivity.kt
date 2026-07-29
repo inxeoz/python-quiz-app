@@ -8,12 +8,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.inxeoz.pythonquiz.ui.screens.QuizScreen
@@ -39,6 +41,7 @@ class MainActivity : ComponentActivity() {
                 QuizApp(
                     vm = vm,
                     viewModelState = state,
+                    isDark = forceDark,
                     onThemeToggle = onThemeToggle
                 )
             }
@@ -50,15 +53,22 @@ class MainActivity : ComponentActivity() {
 private fun QuizApp(
     vm: QuizViewModel,
     viewModelState: com.inxeoz.pythonquiz.viewmodel.QuizUiState,
+    isDark: Boolean,
     onThemeToggle: () -> Unit
 ) {
     val colors = LocalQuizColors.current
 
     Box(modifier = Modifier.fillMaxSize().background(colors.bg).statusBarsPadding()) {
         when {
-            viewModelState.currentScreen == Screen.Quiz -> QuizScreen(vm = vm, onThemeToggle = onThemeToggle)
-            viewModelState.currentScreen == Screen.Report -> ResultsScreen(vm = vm, onThemeToggle = onThemeToggle)
-            else -> WelcomeScreen(vm = vm, onThemeToggle = onThemeToggle)
+            viewModelState.loading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = colors.accent
+                )
+            }
+            viewModelState.currentScreen == Screen.Quiz -> QuizScreen(vm = vm, isDark = isDark, onThemeToggle = onThemeToggle)
+            viewModelState.currentScreen == Screen.Report -> ResultsScreen(vm = vm, isDark = isDark, onThemeToggle = onThemeToggle)
+            else -> WelcomeScreen(vm = vm, isDark = isDark, onThemeToggle = onThemeToggle)
         }
     }
 }

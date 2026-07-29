@@ -1,6 +1,7 @@
 package com.inxeoz.pythonquiz.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,7 +53,7 @@ import com.inxeoz.pythonquiz.data.QuizLoader
 
 
 @Composable
-fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
+fun ResultsScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit) {
     val colors = LocalQuizColors.current
     val state by vm.state.collectAsState()
     val session = state.session
@@ -60,12 +62,21 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
     val correct = session.questions.count { session.answers[it.id] == it.answer }
     val pct = if (total > 0) (correct * 100) / total else 0
 
-    val levelLabel = remember(session.questions) {
+    val dominantLevel = remember(session.questions) {
         val levels = session.questions.map { it.level }
-        if (levels.isEmpty()) "Intermediate"
-        else {
-            val mode = levels.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 3
-            QuizLoader.levelName(mode)
+        if (levels.isEmpty()) 2
+        else levels.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 2
+    }
+
+    val levelLabel = remember(dominantLevel) { QuizLoader.levelName(dominantLevel) }
+
+    val resultMessage = remember(pct) {
+        when {
+            pct >= 90 -> "Outstanding performance!"
+            pct >= 70 -> "Great job!"
+            pct >= 50 -> "Good effort!"
+            pct >= 30 -> "Keep practicing!"
+            else -> "Don't give up!"
         }
     }
 
@@ -82,7 +93,6 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // ── Header row: spacer | level badge ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -91,10 +101,11 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
             ) {
                 Spacer(modifier = Modifier.size(40.dp))
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    val badgeColor = Color(QuizLoader.levelColorValue(dominantLevel))
                     Box(
                         modifier = Modifier
                             .background(
-                                color = colors.accent,
+                                color = badgeColor,
                                 shape = RoundedCornerShape(999.dp)
                             )
                             .padding(horizontal = 10.dp, vertical = 3.dp)
@@ -116,7 +127,7 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
                         .border(1.dp, colors.border, CircleShape)
                 ) {
                     Icon(
-                        Icons.Default.LightMode,
+                        if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
                         contentDescription = "Toggle theme",
                         tint = colors.textMuted,
                         modifier = Modifier.size(18.dp)
@@ -124,7 +135,6 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
                 }
             }
 
-            // ── Results header ──
             Spacer(modifier = Modifier.height(36.dp))
 
             Text(
@@ -139,7 +149,7 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "You did an amazing job",
+                text = resultMessage,
                 fontSize = 16.sp,
                 color = colors.textMuted,
                 textAlign = TextAlign.Center,
@@ -148,7 +158,6 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ── Score circle ──
             ScoreCircle(
                 pct = pct,
                 correct = correct,
@@ -159,7 +168,6 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ── Stats row ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -171,8 +179,8 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    value = formatElapsedTime(session),
-                    label = "Time",
+                    value = "$total",
+                    label = "Questions",
                     colors = colors,
                     modifier = Modifier.weight(1f)
                 )
@@ -180,30 +188,17 @@ fun ResultsScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ── Footer buttons ──
-            PressScaleButton(
-                text = "Try Again",
-                onClick = { vm.startQuizFromQuestions(session.questions, shuffle = true) },
-                colors = colors,
-                isPrimary = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             PressScaleButton(
                 text = "Back to Home",
                 onClick = { vm.goToSetup() },
                 colors = colors,
-                isPrimary = false,
+                isPrimary = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
         }
     }
 }
-
-// ── Score circle: Canvas arc ring + centered text ──
 
 @Composable
 private fun ScoreCircle(
@@ -213,13 +208,18 @@ private fun ScoreCircle(
     colors: QuizColors,
     modifier: Modifier = Modifier
 ) {
+    val animatedSweep by animateFloatAsState(
+        targetValue = (pct / 100f) * 360f,
+        animationSpec = tween(durationMillis = 800),
+        label = "sweep"
+    )
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier.size(200.dp)
     ) {
         Canvas(modifier = Modifier.size(200.dp)) {
             val strokeWidth = 12.dp.toPx()
-            // Background ring (full circle)
             drawArc(
                 color = colors.border,
                 startAngle = 0f,
@@ -227,13 +227,11 @@ private fun ScoreCircle(
                 useCenter = false,
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
-            // Filled arc (proportional to score)
-            val sweep = (pct / 100f) * 360f
-            if (sweep > 0f) {
+            if (animatedSweep > 0f) {
                 drawArc(
                     color = colors.accent,
-                    startAngle = -90f, // start from top
-                    sweepAngle = sweep,
+                    startAngle = -90f,
+                    sweepAngle = animatedSweep,
                     useCenter = false,
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
@@ -257,8 +255,6 @@ private fun ScoreCircle(
         }
     }
 }
-
-// ── Stat card (Accuracy / Time) ──
 
 @Composable
 private fun StatCard(
@@ -288,8 +284,6 @@ private fun StatCard(
         )
     }
 }
-
-// ── Button with 0.98 press scale ──
 
 @Composable
 private fun PressScaleButton(
@@ -336,16 +330,4 @@ private fun PressScaleButton(
             textAlign = TextAlign.Center
         )
     }
-}
-
-
-
-// ── Time formatting ──
-
-private fun formatElapsedTime(session: QuizSession): String {
-    if (!session.timedMode || session.timeLimitMinutes <= 0) return "--:--"
-    val elapsed = (session.timeLimitMinutes * 60) - session.remainingSeconds
-    val minutes = elapsed / 60
-    val seconds = elapsed % 60
-    return "%d:%02d".format(minutes, seconds)
 }

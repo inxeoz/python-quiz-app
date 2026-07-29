@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +50,7 @@ import com.inxeoz.pythonquiz.viewmodel.QuizViewModel
 @Composable
 fun WelcomeScreen(
     vm: QuizViewModel,
+    isDark: Boolean,
     onThemeToggle: () -> Unit,
 ) {
     val colors = LocalQuizColors.current
@@ -102,7 +104,7 @@ fun WelcomeScreen(
                             .border(1.dp, colors.border, CircleShape)
                     ) {
                         Icon(
-                            Icons.Default.LightMode,
+                            if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
                             contentDescription = "Toggle theme",
                             tint = colors.textMuted,
                             modifier = Modifier.size(18.dp)
