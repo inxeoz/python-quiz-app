@@ -62,7 +62,7 @@ fun WelcomeScreen(
     val state by vm.state.collectAsState()
     val visitedCount by vm.seenIds.collectAsState()
     val totalCount = remember(state.questions, selectedLevels, visitedMode, visitedCount) {
-        if (visitedMode) vm.countForLevels(emptySet(), visitedOnly = true)
+        if (visitedMode) vm.countForLevels(selectedLevels, visitedOnly = true)
         else vm.countForLevels(selectedLevels)
     }
 
@@ -150,7 +150,7 @@ fun WelcomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(enabled = totalCount > 0) {
-                            if (visitedMode) vm.startQuizVisited()
+                            if (visitedMode) vm.startQuizVisited(selectedLevels)
                             else vm.startQuizForLevels(selectedLevels)
                         },
                 ) {
@@ -210,35 +210,23 @@ private fun LevelChips(
         }
 
         levels.entries.forEach { (level, name) ->
-            val selected = level in selectedLevels && !visitedMode
+            val selected = level in selectedLevels
             Surface(
                 shape = RoundedCornerShape(999.dp),
-                color = when {
-                    visitedMode -> colors.surface
-                    selected -> colors.accent
-                    else -> colors.surface
-                },
+                color = if (selected) colors.accent else colors.surface,
                 border = BorderStroke(
                     1.dp,
-                    when {
-                        visitedMode -> colors.border
-                        selected -> colors.accent
-                        else -> colors.border
-                    }
+                    if (selected) colors.accent else colors.border
                 ),
                 modifier = Modifier.clip(RoundedCornerShape(999.dp)),
             ) {
                 Text(
                     name,
-                    modifier = Modifier.clickable(enabled = !visitedMode) { onLevelToggle(level) }
+                    modifier = Modifier.clickable { onLevelToggle(level) }
                         .padding(horizontal = 18.dp, vertical = 8.dp),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = when {
-                        visitedMode -> colors.textDim
-                        selected -> Color.White
-                        else -> colors.textMuted
-                    },
+                    color = if (selected) Color.White else colors.textMuted,
                 )
             }
         }

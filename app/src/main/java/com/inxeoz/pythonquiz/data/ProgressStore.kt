@@ -22,6 +22,7 @@ class ProgressStore(private val context: Context) {
     private val seenIdsKey = stringSetPreferencesKey("seen_ids")
     private val dueReviewIdsKey = stringSetPreferencesKey("due_review_ids")
     private val activeSessionKey = stringPreferencesKey("active_session")
+    private val visitCountsKey = stringPreferencesKey("visit_counts")
 
     val completedIds: Flow<Set<Int>> = context.dataStore.data.map { prefs ->
         (prefs[completedIdsKey] ?: emptySet()).mapNotNull { it.toIntOrNull() }.toSet()
@@ -33,6 +34,11 @@ class ProgressStore(private val context: Context) {
 
     val dueReviewIds: Flow<Set<Int>> = context.dataStore.data.map { prefs ->
         (prefs[dueReviewIdsKey] ?: emptySet()).mapNotNull { it.toIntOrNull() }.toSet()
+    }
+
+    val visitCounts: Flow<Map<Int, Int>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[visitCountsKey] ?: return@map emptyMap()
+        runCatching { json.decodeFromString<Map<Int, Int>>(raw) }.getOrDefault(emptyMap())
     }
 
     suspend fun saveActiveSession(session: SavedQuizSession) {
@@ -63,6 +69,11 @@ class ProgressStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             val current = prefs[seenIdsKey] ?: emptySet()
             prefs[seenIdsKey] = current + questionId.toString()
+            val raw = prefs[visitCountsKey] ?: "{}"
+            val counts = runCatching { json.decodeFromString<MutableMap<Int, Int>>(raw) }
+                .getOrDefault(mutableMapOf())
+            counts[questionId] = (counts[questionId] ?: 0) + 1
+            prefs[visitCountsKey] = json.encodeToString(counts)
         }
     }
 }

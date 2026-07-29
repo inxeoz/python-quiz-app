@@ -48,6 +48,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
     val dueReviewIds: StateFlow<Set<Int>> = progressStore.dueReviewIds
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
+    val visitCounts: StateFlow<Map<Int, Int>> = progressStore.visitCounts
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     var allQuestions: List<Question> = emptyList()
         private set
@@ -55,7 +57,10 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private var autoAdvanceJob: Job? = null
 
     fun countForLevels(levels: Set<Int>, visitedOnly: Boolean = false): Int {
-        return if (visitedOnly) {
+        return if (visitedOnly && levels.isNotEmpty()) {
+            val visited = seenIds.value
+            allQuestions.count { it.id in visited && it.level in levels }
+        } else if (visitedOnly) {
             val visited = seenIds.value
             allQuestions.count { it.id in visited }
         } else {
@@ -92,7 +97,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     fun startQuizForLevels(selectedLevels: Set<Int>) {
         val pool = QuizLoader.questionsForLevels(allQuestions, selectedLevels)
         if (pool.isEmpty()) return
-        val qs = pool.shuffled()
+        val counts = visitCounts.value
+        val qs = pool.sortedWith(compareBy({ counts[it.id] ?: 0 }, { it.id }))
         val session = QuizSession(
             questions = qs,
             optionOrders = qs.associate { q -> q.id to q.options.shuffled() }
@@ -105,11 +111,12 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         persistSession(session)
     }
 
-    fun startQuizVisited() {
+    fun startQuizVisited(levels: Set<Int>) {
         val visited = seenIds.value
-        val pool = allQuestions.filter { it.id in visited }
+        val pool = allQuestions.filter { it.id in visited && it.level in levels }
         if (pool.isEmpty()) return
-        val qs = pool.shuffled()
+        val counts = visitCounts.value
+        val qs = pool.sortedWith(compareBy({ counts[it.id] ?: 0 }, { it.id }))
         val session = QuizSession(
             questions = qs,
             optionOrders = qs.associate { q -> q.id to q.options.shuffled() }
