@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -84,13 +86,15 @@ fun ResultsScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit)
         modifier = Modifier
             .fillMaxSize()
             .background(colors.bg)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         Column(
             modifier = Modifier
                 .widthIn(max = 430.dp)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 40.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Row(
@@ -134,7 +138,7 @@ fun ResultsScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit)
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             Text(
                 text = "Quiz Completed!",

@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -79,13 +81,15 @@ fun QuizScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(colors.bg)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .widthIn(max = 430.dp)
                 .align(Alignment.TopCenter)
-                .padding(horizontal = 24.dp)
+                .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 40.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             QuizHeader(
@@ -97,7 +101,7 @@ fun QuizScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit) {
                 onThemeToggle = onThemeToggle
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             ProgressSection(
                 current = currentIndex + 1,

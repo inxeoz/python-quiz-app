@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -65,7 +67,7 @@ fun WelcomeScreen(
     }
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().background(colors.bg),
+        modifier = Modifier.fillMaxSize().background(colors.bg).statusBarsPadding().navigationBarsPadding(),
         contentAlignment = Alignment.TopCenter,
     ) {
         val contentWidth = if (maxWidth > 430.dp) 430.dp else maxWidth
@@ -75,7 +77,7 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(start = 24.dp, end = 24.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 40.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -113,7 +115,7 @@ fun WelcomeScreen(
                     }
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(40.dp))
 
                 SectionTitle("Difficulty Level", colors)
                 Spacer(Modifier.height(12.dp))
