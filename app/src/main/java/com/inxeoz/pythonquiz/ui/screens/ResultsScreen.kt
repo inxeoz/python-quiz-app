@@ -39,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -268,7 +267,6 @@ private fun StatCard(
 ) {
     Column(
         modifier = modifier
-            .shadow(4.dp, RoundedCornerShape(16.dp))
             .background(colors.surface, RoundedCornerShape(16.dp))
             .border(1.dp, colors.border, RoundedCornerShape(16.dp))
             .padding(16.dp),
