@@ -129,6 +129,9 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             answers = s.answers + (questionId to option),
             revealedAnswers = s.revealedAnswers + questionId
         ))
+        viewModelScope.launch {
+            progressStore.markAsSeen(questionId)
+        }
         scheduleAutoAdvance(s, questionId)
     }
 

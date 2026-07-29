@@ -58,6 +58,13 @@ class ProgressStore(private val context: Context) {
             prefs[dueReviewIdsKey] = (current + missedIds.map { it.toString() } - correctIds.map { it.toString() }.toSet())
         }
     }
+
+    suspend fun markAsSeen(questionId: Int) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[seenIdsKey] ?: emptySet()
+            prefs[seenIdsKey] = current + questionId.toString()
+        }
+    }
 }
 
 @Serializable
