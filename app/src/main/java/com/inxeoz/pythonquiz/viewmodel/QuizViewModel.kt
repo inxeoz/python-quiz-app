@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.inxeoz.pythonquiz.data.ProgressStore
 import com.inxeoz.pythonquiz.data.Question
 import com.inxeoz.pythonquiz.data.QuizLoader
-import com.inxeoz.pythonquiz.data.SavedQuizAttempt
 import com.inxeoz.pythonquiz.data.SavedQuizSession
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,8 +37,8 @@ data class QuizUiState(
     val hasSavedSession: Boolean = false
 )
 
-enum class Screen { Setup, Quiz, Report, Browse, FlaggedBrowse }
-enum class PracticeScope { All, NewOnly, Incomplete, Completed, Flagged, ReviewDue }
+enum class Screen { Setup, Quiz, Report }
+enum class PracticeScope { All, NewOnly, Incomplete, Completed, ReviewDue }
 
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -51,22 +50,22 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
     val seenIds: StateFlow<Set<Int>> = progressStore.seenIds
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
-    val searchHistory: StateFlow<Set<String>> = progressStore.searchHistory
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
-    val flaggedIds: StateFlow<Set<Int>> = progressStore.flaggedIds
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
     val dueReviewIds: StateFlow<Set<Int>> = progressStore.dueReviewIds
         .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
-    val quizHistory: StateFlow<List<SavedQuizAttempt>> = progressStore.quizHistory
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     var allQuestions: List<Question> = emptyList()
         private set
 
     private var autoAdvanceJob: Job? = null
 
-    val categories: List<QuizLoader.CategoryInfo>
-        get() = QuizLoader.getCategories(allQuestions)
+    fun countForLevels(levels: Set<Int>, visitedOnly: Boolean = false): Int {
+        return if (visitedOnly) {
+            val visited = seenIds.value
+            allQuestions.count { it.id in visited }
+        } else {
+            QuizLoader.countForLevels(allQuestions, levels)
+        }
+    }
 
     init {
         loadQuestions()
@@ -105,7 +104,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         val completed = completedIds.value
         val seen = seenIds.value
-        val flagged = flaggedIds.value
         val dueReview = dueReviewIds.value
         val pool = allQuestions.filter {
             it.level in selectedLevels && when (scope) {
@@ -113,7 +111,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 PracticeScope.NewOnly -> it.id !in seen
                 PracticeScope.Incomplete -> it.id !in completed
                 PracticeScope.Completed -> it.id in completed
-                PracticeScope.Flagged -> it.id in flagged
                 PracticeScope.ReviewDue -> it.id in dueReview
             }
         }
@@ -151,8 +148,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         persistSession(session)
     }
 
-    fun startQuizForCategory(category: String, selectedLevels: Set<Int>) {
-        val pool = QuizLoader.questionsForCategory(allQuestions, category, selectedLevels)
+    fun startQuizForLevels(selectedLevels: Set<Int>) {
+        val pool = QuizLoader.questionsForLevels(allQuestions, selectedLevels)
         if (pool.isEmpty()) return
         val qs = pool.shuffled()
         val session = QuizSession(
@@ -167,8 +164,22 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         persistSession(session)
     }
 
-    fun countForCategory(category: String, levels: Set<Int>): Int =
-        QuizLoader.countForCategoryLevels(allQuestions, category, levels)
+    fun startQuizVisited() {
+        val visited = seenIds.value
+        val pool = allQuestions.filter { it.id in visited }
+        if (pool.isEmpty()) return
+        val qs = pool.shuffled()
+        val session = QuizSession(
+            questions = qs,
+            optionOrders = qs.associate { q -> q.id to q.options.shuffled() }
+        )
+        _state.value = _state.value.copy(
+            session = session,
+            currentScreen = Screen.Quiz,
+            hasSavedSession = true
+        )
+        persistSession(session)
+    }
 
     fun selectAnswer(questionId: Int, option: String) {
         val s = _state.value.session
@@ -215,19 +226,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         updateSession(s.copy(currentIndex = index))
     }
 
-    fun toggleFlag(questionId: Int) {
-        viewModelScope.launch {
-            progressStore.toggleFlagged(questionId)
-        }
-    }
-
-    fun clearAllFlagged() {
-        viewModelScope.launch {
-            val ids = flaggedIds.value.toList()
-            ids.forEach { progressStore.toggleFlagged(it) }
-        }
-    }
-
     fun submitQuiz() {
         cancelAutoAdvance()
         val session = _state.value.session.copy(submitted = true)
@@ -240,18 +238,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             val wrongIds = session.questions.filter { q -> session.answers[q.id] != q.answer }.map { it.id }.toSet()
             val correctIds = session.questions.filter { q -> session.answers[q.id] == q.answer }.map { it.id }.toSet()
             progressStore.recordReviewResults(wrongIds, correctIds)
-            progressStore.addQuizAttempt(
-                SavedQuizAttempt(
-                    id = System.currentTimeMillis(),
-                    completedAtMillis = System.currentTimeMillis(),
-                    questionIds = session.questions.map { it.id },
-                    answers = session.answers,
-                    correctCount = correctIds.size,
-                    totalCount = session.questions.size,
-                    timedMode = session.timedMode,
-                    timeLimitMinutes = session.timeLimitMinutes
-                )
-            )
             progressStore.clearActiveSession()
         }
     }
@@ -265,40 +251,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         )
         viewModelScope.launch {
             progressStore.clearActiveSession()
-        }
-    }
-
-    fun goToBrowse() {
-        _state.value = _state.value.copy(currentScreen = Screen.Browse)
-    }
-
-    fun goToFlaggedBrowse() {
-        _state.value = _state.value.copy(currentScreen = Screen.FlaggedBrowse)
-    }
-
-    fun addSearchQuery(query: String) {
-        val trimmed = query.trim()
-        if (trimmed.length < 2) return
-        viewModelScope.launch {
-            progressStore.addSearchQuery(trimmed)
-        }
-    }
-
-    fun clearSearchHistory() {
-        viewModelScope.launch {
-            progressStore.clearSearchHistory()
-        }
-    }
-
-    fun toggleCompleted(id: Int) {
-        viewModelScope.launch {
-            progressStore.toggleCompleted(id)
-        }
-    }
-
-    fun markAsSeen(id: Int) {
-        viewModelScope.launch {
-            progressStore.markAsSeen(id)
         }
     }
 
@@ -324,16 +276,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun retryQuizAttempt(attempt: SavedQuizAttempt) {
-        val questions = questionsByIds(attempt.questionIds)
-        startQuizFromQuestions(questions, shuffle = false, shuffleOptions = true)
-    }
-
-    fun retryFlaggedQuestions() {
-        val questions = questionsByIds(flaggedIds.value.toList())
-        startQuizFromQuestions(questions, shuffle = false, shuffleOptions = true)
-    }
-
     fun shareQuestionText(question: Question): String = buildString {
         appendLine(question.question)
         question.options.forEachIndexed { index, option ->
@@ -342,20 +284,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         appendLine()
         appendLine("Answer: ${question.answer}")
         append("Explanation: ${question.explanation}")
-    }
-
-    fun shareScoreSummary(): String {
-        val session = _state.value.session
-        val total = session.questions.size
-        val correct = session.questions.count { q -> session.answers[q.id] == q.answer }
-        val pct = if (total > 0) correct * 100 / total else 0
-        return "Python Quiz score: $correct/$total ($pct%)."
-    }
-
-    fun clearQuizHistory() {
-        viewModelScope.launch {
-            progressStore.clearQuizHistory()
-        }
     }
 
     private fun updateSession(session: QuizSession) {
@@ -368,11 +296,6 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             progressStore.saveActiveSession(session.toSaved())
         }
-    }
-
-    private fun questionsByIds(ids: List<Int>): List<Question> {
-        val byId = allQuestions.associateBy { it.id }
-        return ids.mapNotNull { byId[it] }
     }
 
     private fun QuizSession.toSaved(): SavedQuizSession = SavedQuizSession(

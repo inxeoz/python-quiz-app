@@ -7,55 +7,25 @@ import kotlinx.serialization.decodeFromString
 object QuizLoader {
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val categoryFiles = mapOf(
-        "python" to "python_quiz.json",
-        "arts"    to "arts_quiz.json",
-        "science" to "science_quiz.json",
-        "tech"    to "tech_quiz.json",
-        "sports"  to "sports_quiz.json"
-    )
+    private const val QUIZ_FILE = "python_quiz.json"
 
     fun loadQuestions(context: Context): List<Question> {
-        val all = mutableListOf<Question>()
-        for ((category, file) in categoryFiles) {
-            try {
-                val text = context.assets.open(file)
-                    .bufferedReader().use { it.readText() }
-                val questions = json.decodeFromString<List<Question>>(text)
-                all.addAll(questions.map { it.copy(category = category) })
-            } catch (_: Exception) {
-                // file missing or malformed — skip gracefully
-            }
+        return try {
+            val text = context.assets.open(QUIZ_FILE)
+                .bufferedReader().use { it.readText() }
+            json.decodeFromString<List<Question>>(text)
+        } catch (_: Exception) {
+            emptyList()
         }
-        return all
     }
 
-    /** Categories with display name and total question count. */
-    fun getCategories(allQuestions: List<Question>): List<CategoryInfo> {
-        val byCategory = allQuestions.groupBy { it.category }
-        return listOf(
-            CategoryInfo("python", "Python", byCategory["python"]?.size ?: 0),
-            CategoryInfo("arts",    "Arts",    byCategory["arts"]?.size    ?: 0),
-            CategoryInfo("science", "Science", byCategory["science"]?.size ?: 0),
-            CategoryInfo("tech",    "Tech",    byCategory["tech"]?.size    ?: 0),
-            CategoryInfo("sports",  "Sports",  byCategory["sports"]?.size  ?: 0),
-        ).filter { it.totalCount > 0 }
+    fun questionsForLevels(allQuestions: List<Question>, levels: Set<Int>): List<Question> {
+        return allQuestions.filter { it.level in levels }
     }
 
-    /** How many questions exist for [category] at [levels]. */
-    fun countForCategoryLevels(allQuestions: List<Question>, category: String, levels: Set<Int>): Int {
-        return allQuestions.count { it.category == category && it.level in levels }
+    fun countForLevels(allQuestions: List<Question>, levels: Set<Int>): Int {
+        return allQuestions.count { it.level in levels }
     }
-
-    fun questionsForCategory(allQuestions: List<Question>, category: String, levels: Set<Int>): List<Question> {
-        return allQuestions.filter { it.category == category && it.level in levels }
-    }
-
-    data class CategoryInfo(
-        val key: String,
-        val displayName: String,
-        val totalCount: Int
-    )
 
     val levelNames = mapOf(
         0 to "Basic",

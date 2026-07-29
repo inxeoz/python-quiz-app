@@ -24,8 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -47,9 +46,8 @@ import com.inxeoz.pythonquiz.ui.theme.QuizColors
 import com.inxeoz.pythonquiz.viewmodel.QuizViewModel
 
 @Composable
-fun QuizScreen(vm: QuizViewModel) {
+fun QuizScreen(vm: QuizViewModel, onThemeToggle: () -> Unit) {
     val state by vm.state.collectAsState()
-    val flaggedIds by vm.flaggedIds.collectAsState()
     val colors = LocalQuizColors.current
     val session = state.session
     val questions = session.questions
@@ -60,7 +58,6 @@ fun QuizScreen(vm: QuizViewModel) {
     val question = questions[currentIndex]
     val options = session.optionOrders[question.id] ?: question.options
     val selectedAnswer = session.answers[question.id]
-    val isFlagged = question.id in flaggedIds
     val isRevealed = question.id in session.revealedAnswers
     val isSubmitted = session.submitted
     val anyRevealedOrSubmitted = isRevealed || isSubmitted
@@ -80,10 +77,11 @@ fun QuizScreen(vm: QuizViewModel) {
                 .verticalScroll(rememberScrollState())
         ) {
             QuizHeader(
-                category = question.topic,
+                topic = question.topic,
                 level = question.level,
                 colors = colors,
-                onBack = { vm.goToSetup() }
+                onBack = { vm.goToSetup() },
+                onThemeToggle = onThemeToggle
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -100,10 +98,8 @@ fun QuizScreen(vm: QuizViewModel) {
             QuestionCard(
                 questionIndex = currentIndex + 1,
                 questionText = question.question,
-                isFlagged = isFlagged,
                 isSubmitted = anyRevealedOrSubmitted,
-                colors = colors,
-                onToggleFlag = { vm.toggleFlag(question.id) }
+                colors = colors
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -144,10 +140,11 @@ fun QuizScreen(vm: QuizViewModel) {
 
 @Composable
 private fun QuizHeader(
-    category: String,
+    topic: String,
     level: Int,
     colors: QuizColors,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onThemeToggle: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -175,7 +172,7 @@ private fun QuizHeader(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = category,
+                text = topic,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.text,
@@ -197,6 +194,20 @@ private fun QuizHeader(
             }
         }
 
+        IconButton(
+            onClick = onThemeToggle,
+            modifier = Modifier
+                .size(40.dp)
+                .background(colors.surface, CircleShape)
+                .border(1.dp, colors.border, CircleShape)
+        ) {
+            Icon(
+                Icons.Default.LightMode,
+                contentDescription = "Toggle theme",
+                tint = colors.textMuted,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
@@ -256,10 +267,8 @@ private fun ProgressSection(
 private fun QuestionCard(
     questionIndex: Int,
     questionText: String,
-    isFlagged: Boolean,
     isSubmitted: Boolean,
-    colors: QuizColors,
-    onToggleFlag: () -> Unit
+    colors: QuizColors
 ) {
     Column(
         modifier = Modifier
@@ -280,28 +289,6 @@ private fun QuestionCard(
                 fontWeight = FontWeight.Bold,
                 color = colors.textMuted
             )
-
-            IconButton(
-                onClick = onToggleFlag,
-                modifier = Modifier
-                    .size(36.dp)
-                    .then(
-                        if (isFlagged) {
-                            Modifier
-                                .background(colors.warning.copy(alpha = 0.12f), CircleShape)
-                                .border(1.dp, colors.warning, CircleShape)
-                        } else {
-                            Modifier.border(1.dp, colors.border, CircleShape)
-                        }
-                    )
-            ) {
-                Icon(
-                    imageVector = if (isFlagged) Icons.Filled.Flag else Icons.Outlined.Flag,
-                    contentDescription = if (isFlagged) "Unflag" else "Flag",
-                    tint = if (isFlagged) colors.warning else colors.textMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
