@@ -95,8 +95,7 @@ fun ResultsScreen(vm: QuizViewModel, isDark: Boolean, onThemeToggle: () -> Unit)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 40.dp),
+                    .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Spacer(modifier = Modifier.size(40.dp))
